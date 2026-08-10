@@ -1,0 +1,11 @@
+{
+  "name": "unretail-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run seed",
+    "build:client": "npm --prefix client run build",
+    "sync:search": "npm --prefix server run sync-search"
+  }
+}

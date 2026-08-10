@@ -1,4 +1,4 @@
-# 🛍️ UnRetail (VaultGrid)
+# 🛍️ UnRetail 
 
 > **The Decentralized Engine for Local Thrift & Circular Fashion**  
 > Bringing fragmented, offline thrift store inventories into a real-time, unified online marketplace.

@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  MERCHANT
+  ADMIN
+}
+
+enum Condition {
+  LIKE_NEW
+  GENTLY_USED
+  FLAWED
+}
+
+enum ItemStatus {
+  AVAILABLE
+  PENDING
+  SOLD
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  REFUNDED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  fullName  String
+  avatarUrl String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shops    Shop[]
+  orders   Order[]
+  disputes Dispute[]
+
+  @@map("users")
+}
+
+model Shop {
+  id         String   @id @default(uuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  shopName   String
+  slug       String   @unique
+  city       String
+  address    String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items  Item[]
+  orders Order[]
+
+  @@map("shops")
+}
+
+model Item {
+  id          String     @id @default(uuid())
+  shopId      String
+  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       Float
+  category    String
+  size        String
+  era         String
+  condition   Condition
+  images      String[]
+  status      ItemStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  orders Order[]
+
+  @@map("items")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  buyerId           String
+  buyer             User        @relation(fields: [buyerId], references: [id])
+  itemId            String
+  item              Item        @relation(fields: [itemId], references: [id])
+  shopId            String
+  shop              Shop        @relation(fields: [shopId], references: [id])
+  amountPaid        Float
+  razorpayOrderId   String      @unique
+  razorpayPaymentId String?
+  status            OrderStatus @default(PENDING)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  disputes Dispute[]
+
+  @@map("orders")
+}
+
+model Dispute {
+  id         String        @id @default(uuid())
+  orderId    String
+  order      Order         @relation(fields: [orderId], references: [id])
+  customerId String
+  customer   User          @relation(fields: [customerId], references: [id])
+  reason     String
+  status     DisputeStatus @default(OPEN)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("disputes")
+}

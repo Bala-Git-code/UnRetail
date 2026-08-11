@@ -6,7 +6,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || 'YourCloudinaryApiSecretHere',
 });
 
-export const generateCloudinarySignature = (folder: string = 'unretail-listings') => {
+export const generateCloudinarySignature = (folder = 'unretail-listings') => {
   const timestamp = Math.round(new Date().getTime() / 1000);
   const paramsToSign = {
     timestamp,

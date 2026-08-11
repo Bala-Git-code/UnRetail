@@ -1,19 +1,16 @@
-import { Request, Response } from 'express';
 import crypto from 'crypto';
-import prisma from '../prisma/client';
-import { AuthRequest } from '../middlewares/auth.middleware';
-import { createRazorpayOrder } from '../services/razorpay.service';
-import { generateCloudinarySignature } from '../services/cloudinary.service';
-import { syncItemToMeilisearch } from '../services/meili.service';
+import prisma from '../prisma/client.js';
+import { createRazorpayOrder } from '../services/razorpay.service.js';
+import { generateCloudinarySignature } from '../services/cloudinary.service.js';
+import { syncItemToMeilisearch } from '../services/meili.service.js';
 
-export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createOrder = async (req, res) => {
   try {
     const { itemId, shopId } = req.body;
     const buyerId = req.user?.id || req.body?.buyerId || 'guest_buyer';
 
     if (!itemId) {
-      res.status(400).json({ success: false, error: 'itemId is required' });
-      return;
+      return res.status(400).json({ success: false, error: 'itemId is required' });
     }
 
     let item;
@@ -57,7 +54,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       };
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Razorpay order created successfully',
       razorpayOrder: {
@@ -68,15 +65,15 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
       },
       order: dbOrder,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const handleRazorpayWebhook = async (req: Request, res: Response): Promise<void> => {
+export const handleRazorpayWebhook = async (req, res) => {
   try {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'YourRazorpayWebhookSecretHere';
-    const razorpaySignature = req.headers['x-razorpay-signature'] as string;
+    const razorpaySignature = req.headers['x-razorpay-signature'];
 
     if (razorpaySignature) {
       const shasum = crypto.createHmac('sha256', webhookSecret);
@@ -84,8 +81,7 @@ export const handleRazorpayWebhook = async (req: Request, res: Response): Promis
       const digest = shasum.digest('hex');
 
       if (digest !== razorpaySignature) {
-        res.status(400).json({ success: false, error: 'Invalid HMAC SHA256 webhook signature' });
-        return;
+        return res.status(400).json({ success: false, error: 'Invalid HMAC SHA256 webhook signature' });
       }
     }
 
@@ -122,20 +118,20 @@ export const handleRazorpayWebhook = async (req: Request, res: Response): Promis
       }
     }
 
-    res.status(200).json({ success: true, status: 'ok' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    return res.status(200).json({ success: true, status: 'ok' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const getCloudinarySignature = async (_req: Request, res: Response): Promise<void> => {
+export const getCloudinarySignature = async (_req, res) => {
   try {
     const signaturePayload = generateCloudinarySignature('unretail-listings');
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: signaturePayload,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -1,13 +1,11 @@
-import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import prisma from '../prisma/client';
-import { AuthRequest } from '../middlewares/auth.middleware';
+import prisma from '../prisma/client.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET || 'unretail_super_secret_jwt_key_change_in_production_2026';
 
-export const googleAuth = async (req: Request, res: Response): Promise<void> => {
+export const googleAuth = async (req, res) => {
   try {
     const { id_token, email: requestedEmail, fullName: requestedName, avatarUrl: requestedAvatar, role: requestedRole } = req.body;
 
@@ -33,8 +31,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     }
 
     if (!userEmail) {
-      res.status(400).json({ success: false, error: 'Email is required for authentication' });
-      return;
+      return res.status(400).json({ success: false, error: 'Email is required for authentication' });
     }
 
     const targetRole = ['CUSTOMER', 'MERCHANT', 'ADMIN'].includes(requestedRole) ? requestedRole : 'CUSTOMER';
@@ -76,7 +73,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
       { expiresIn: '7d' }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Google authentication successful',
       token: accessToken,
@@ -88,17 +85,16 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
         role: user.role,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Google auth error:', error);
-    res.status(500).json({ success: false, error: error.message || 'Authentication failed' });
+    return res.status(500).json({ success: false, error: error.message || 'Authentication failed' });
   }
 };
 
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req, res) => {
   try {
     if (!req.user) {
-      res.status(401).json({ success: false, error: 'Not authenticated' });
-      return;
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
 
     let user;
@@ -111,14 +107,13 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     if (!user) {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         user: req.user,
       });
-      return;
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       user: {
         id: user.id,
@@ -128,7 +123,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         role: user.role,
       },
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -7,7 +7,7 @@ const client = new MeiliSearch({
 
 export const ITEMS_INDEX = 'items';
 
-export const syncItemToMeilisearch = async (item: any) => {
+export const syncItemToMeilisearch = async (item) => {
   try {
     const index = client.index(ITEMS_INDEX);
     await index.addDocuments([item]);
@@ -16,7 +16,7 @@ export const syncItemToMeilisearch = async (item: any) => {
   }
 };
 
-export const removeItemFromMeilisearch = async (itemId: string) => {
+export const removeItemFromMeilisearch = async (itemId) => {
   try {
     const index = client.index(ITEMS_INDEX);
     await index.deleteDocument(itemId);
@@ -25,12 +25,12 @@ export const removeItemFromMeilisearch = async (itemId: string) => {
   }
 };
 
-export const searchItemsInMeilisearch = async (query: string, filters?: Record<string, any>) => {
+export const searchItemsInMeilisearch = async (query, filters) => {
   try {
     const index = client.index(ITEMS_INDEX);
     let filterString = '';
     if (filters) {
-      const parts: string[] = [];
+      const parts = [];
       if (filters.category) parts.push(`category = "${filters.category}"`);
       if (filters.era) parts.push(`era = "${filters.era}"`);
       if (filters.condition) parts.push(`condition = "${filters.condition}"`);

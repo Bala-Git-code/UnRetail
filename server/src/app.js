@@ -1,16 +1,17 @@
-import express, { Express, Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { googleAuth, getMe } from './controllers/auth.controller';
-import { getItems, getItemById, createItem, updateItem, deleteItem } from './controllers/item.controller';
-import { createOrder, handleRazorpayWebhook, getCloudinarySignature } from './controllers/payment.controller';
-import { getShops, getShopById, createShop, verifyShop } from './controllers/shop.controller';
-import { authenticateJwt } from './middlewares/auth.middleware';
-import { requireRole } from './middlewares/role.middleware';
+
+import { googleAuth, getMe } from './controllers/auth.controller.js';
+import { getItems, getItemById, createItem, updateItem, deleteItem } from './controllers/item.controller.js';
+import { createOrder, handleRazorpayWebhook, getCloudinarySignature } from './controllers/payment.controller.js';
+import { getShops, getShopById, createShop, verifyShop } from './controllers/shop.controller.js';
+import { authenticateJwt } from './middlewares/auth.middleware.js';
+import { requireRole } from './middlewares/role.middleware.js';
 
 dotenv.config();
 
-const app: Express = express();
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Global Middlewares
@@ -18,9 +19,9 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health Check
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', service: 'UnRetail API Backend', timestamp: new Date().toISOString() });
+// Health Check Endpoint
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'UnRetail Express API (ES Modules)', timestamp: new Date().toISOString() });
 });
 
 // API Routes Router
@@ -54,14 +55,14 @@ apiRouter.patch('/shops/:shopId/verify', authenticateJwt, requireRole(['ADMIN'])
 app.use('/api/v1', apiRouter);
 
 // 404 Handler
-app.use((_req: Request, res: Response) => {
+app.use((_req, res) => {
   res.status(404).json({ success: false, error: 'API route not found' });
 });
 
 // Start Express Server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    console.log(`🚀 UnRetail Express API Server running on port ${PORT}`);
+    console.log(`🚀 UnRetail Express API Server running on port ${PORT} (ES Modules)`);
   });
 }
 

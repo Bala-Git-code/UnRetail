@@ -1,4 +1,4 @@
-# 🛍️ UnRetail 
+# 🛍️ UnRetail (VaultGrid)
 
 > **The Decentralized Engine for Local Thrift & Circular Fashion**  
 > Bringing fragmented, offline thrift store inventories into a real-time, unified online marketplace.
@@ -7,32 +7,49 @@
 
 ## 📌 Project Overview
 
-**UnRetail** bridges the gap between independent, brick-and-mortar thrift shops and digital shoppers. The platform addresses the single-stock, 1-of-1 inventory problem native to secondhand fashion through a dual-portal architecture:
+**UnRetail** bridges the gap between independent, brick-and-mortar thrift shops and digital shoppers. The platform addresses the single-stock, 1-of-1 inventory problem native to secondhand fashion through a triple-portal architecture:
 
-1. **Merchant Portal:** A high-speed, mobile-first inventory desk enabling physical shop owners to list items in under 60 seconds and synchronize in-store offline sales in real time.
-2. **Customer Portal:** A high-performance discovery feed featuring sub-50ms typo-tolerant search, instant multi-attribute filtering (size, era, condition grade, location), and multi-vendor checkout.
+1. **Customer Portal:** A high-performance discovery feed featuring sub-50ms typo-tolerant search, instant multi-attribute filtering (size, era, condition grade, location), and Razorpay checkout.
+2. **Merchant Portal:** A high-speed, mobile-first inventory desk enabling physical shop owners to list items in under 60 seconds and synchronize in-store offline sales in real time.
+3. **Admin Portal:** A platform oversight desk for content moderation, shop verifications, GMV tracking, and customer dispute resolution.
 
 ---
 
 ## 🏗️ Tech Stack & Architecture
 
 ```text
-                                 ┌───────────────────────────┐
-                                 │     NEXT.JS APP ROUTER    │
-                                 │       (Vercel Edge)       │
-                                 └─────────────┬─────────────┘
-                                               │
-                      ┌────────────────────────┴────────────────────────┐
-                      ▼                                                 ▼
-        ┌───────────────────────────┐                     ┌───────────────────────────┐
-        │   SUPABASE (PostgreSQL)   │                     │    MEILISEARCH ENGINE     │
-        │ - Auth (Google OAuth)     │ ──(DB Webhook)───►  │ - Sub-50ms Search Bar    │
-        │ - Database & RLS Security │                     │ - Multi-Attribute Filters │
-        └───────────────────────────┘                     └───────────────────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │      STRIPE CONNECT       │
-        │ - Split Vendor Payouts    │
-        │ - Automated Platform Cut  │
-        └───────────────────────────┘
+                               +--------------------------------------------------+
+                               |                 NEXT.JS FRONTEND                 |
+                               |                   (App Router)                   |
+                               |  - Customer Feed  - Merchant Portal - Admin Desk |
+                               +--------------------------------------------------+
+                                        │                                │
+                       (Direct Browser Uploads)                  (REST API Requests)
+                                        │                                │
+                                        ▼                                ▼
+                          +--------------------------+     +--------------------------+
+                          |      CLOUDINARY CDN      |     |     NODE.JS / EXPRESS    |
+                          |                          |     |        BACKEND API       |
+                          | - Photo Compression      |     | - Google Auth & JWT      |
+                          | - Mobile Image Cropping  |     | - Order Execution Logic  |
+                          +--------------------------+     | - Role Guards & RBAC     |
+                                                           +--------------------------+
+                                                                 │        │        │
+                                                ┌────────────────┘        │        └────────────────┐
+                                                │                         │                         │
+                                                ▼                         ▼                         ▼
+                                   +-----------------------+  +-----------------------+  +-----------------------+
+                                   |   POSTGRESQL (PRISMA) |  |   RAZORPAY GATEWAY    |  |  MEILISEARCH ENGINE   |
+                                   |                       |  |                       |  |                       |
+                                   | - User/Shop/Item DB   |  | - Webhook Signatures  |  | - Sub-50ms Search     |
+                                   | - Transaction Locks   |  | - Direct Vendor Split |  | - Faceted Filters     |
+                                   +-----------------------+  +-----------------------+  +-----------------------+
+
+
+
+🔒 Security Architecture
+Role-Based Access Control (RBAC): Express API endpoints enforce strict role verification (authMiddleware and requireRole(['merchant', 'admin'])).
+
+Direct Signed Uploads: Images are uploaded directly from the browser to Cloudinary using single-use signatures generated by the Express API, bypassing backend server memory.
+
+Payment Signature Verification: Razorpay webhook payloads are verified on the backend using HMAC-SHA256 signatures prior to unlocking order state changes.

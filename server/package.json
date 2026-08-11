@@ -2,17 +2,34 @@
   "name": "unretail-server",
   "version": "1.0.0",
   "private": true,
+  "main": "dist/app.js",
   "scripts": {
+    "dev": "tsx src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "prisma:generate": "prisma generate --schema=src/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
     "seed": "tsx scripts/seed.ts",
     "sync-search": "tsx scripts/sync-search.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.48.1",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "meilisearch": "^0.44.0"
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.0",
+    "jsonwebtoken": "^9.0.2",
+    "meilisearch": "^0.44.0",
+    "razorpay": "^2.9.5"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^22.13.4",
+    "prisma": "^5.22.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

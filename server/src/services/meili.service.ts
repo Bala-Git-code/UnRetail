@@ -1,0 +1,52 @@
+import { MeiliSearch } from 'meilisearch';
+
+const client = new MeiliSearch({
+  host: process.env.MEILISEARCH_HOST || 'http://localhost:7700',
+  apiKey: process.env.MEILISEARCH_ADMIN_KEY || 'masterKey',
+});
+
+export const ITEMS_INDEX = 'items';
+
+export const syncItemToMeilisearch = async (item: any) => {
+  try {
+    const index = client.index(ITEMS_INDEX);
+    await index.addDocuments([item]);
+  } catch (error) {
+    console.warn('Meilisearch sync failed (is Meilisearch server running?):', error);
+  }
+};
+
+export const removeItemFromMeilisearch = async (itemId: string) => {
+  try {
+    const index = client.index(ITEMS_INDEX);
+    await index.deleteDocument(itemId);
+  } catch (error) {
+    console.warn('Meilisearch delete failed:', error);
+  }
+};
+
+export const searchItemsInMeilisearch = async (query: string, filters?: Record<string, any>) => {
+  try {
+    const index = client.index(ITEMS_INDEX);
+    let filterString = '';
+    if (filters) {
+      const parts: string[] = [];
+      if (filters.category) parts.push(`category = "${filters.category}"`);
+      if (filters.era) parts.push(`era = "${filters.era}"`);
+      if (filters.condition) parts.push(`condition = "${filters.condition}"`);
+      if (filters.status) parts.push(`status = "${filters.status}"`);
+      filterString = parts.join(' AND ');
+    }
+
+    const searchResults = await index.search(query, {
+      filter: filterString || undefined,
+      limit: 20,
+    });
+    return searchResults.hits;
+  } catch (error) {
+    console.warn('Meilisearch search error, falling back:', error);
+    return null;
+  }
+};
+
+export default client;

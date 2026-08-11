@@ -1,157 +1,215 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, SlidersHorizontal, Tag, DollarSign, RefreshCw, X, ArrowUpDown } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Search, Filter, Store, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+import apiClient from '@/lib/api-client';
 
-export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedCondition, setSelectedCondition] = useState('All');
-  const [maxPrice, setMaxPrice] = useState(250);
+export default function SearchFacetedPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('');
+  const [era, setEra] = useState('');
+  const [condition, setCondition] = useState('');
+  const [city, setCity] = useState('');
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchSource, setSearchSource] = useState<string>('database');
 
-  const mockSearchResults = [
-    {
-      id: 'sr-1',
-      title: '70s Vintage Leather Biker Boots',
-      category: 'Footwear',
-      condition: 'Excellent',
-      price: 145.0,
-      shop: 'Sole Relics',
-      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80',
-    },
-    {
-      id: 'sr-2',
-      title: 'Retro Oversized Knit Sweater 90s Pattern',
-      category: 'Apparel',
-      condition: 'Mint',
-      price: 48.0,
-      shop: 'Cozy Vintage',
-      image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=500&q=80',
-    },
-  ];
+  useEffect(() => {
+    handleSearch();
+  }, [category, era, condition, city]);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('query', searchQuery);
+      if (category) params.append('category', category);
+      if (era) params.append('era', era);
+      if (condition) params.append('condition', condition);
+      if (city) params.append('city', city);
+
+      const response = await apiClient.get(`/items?${params.toString()}`);
+      if (response.data.success) {
+        setItems(response.data.data);
+        setSearchSource(response.data.source || 'database');
+      }
+    } catch (err) {
+      console.warn('Search query error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategory('');
+    setEra('');
+    setCondition('');
+    setCity('');
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Top Search Header */}
-      <div className="space-y-4">
-        <h1 className="text-2xl font-black text-slate-100 flex items-center gap-2">
-          <Search className="w-6 h-6 text-emerald-400" /> Search Marketplace & Meilisearch Index
-        </h1>
-
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by keyword, brand, era (e.g. 90s, Levi's, Leather)..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-2xl pl-12 pr-10 py-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-xl"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Search & Faceted Discovery</h1>
+        <p className="text-xs text-slate-400 mt-1">
+          Sub-50ms typo-tolerant search powered by Meilisearch across local thrift inventories.
+        </p>
       </div>
 
+      {/* Main Search Input */}
+      <form onSubmit={handleSearch} className="mb-8 relative">
+        <div className="relative flex items-center">
+          <Search className="w-5 h-5 text-slate-400 absolute left-4 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search Levi 501, Harley leather jacket, Japanese kimono..."
+            className="w-full pl-12 pr-32 py-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 transition-all shadow-lg"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 transition-colors"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {/* Content Layout: Faceted Sidebar + Results */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Filters Sidebar */}
-        <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-6 h-fit">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <span className="font-bold text-sm text-slate-200 flex items-center gap-2">
+        {/* Faceted Filter Sidebar */}
+        <div className="space-y-6 bg-slate-900/50 border border-slate-800 p-5 rounded-2xl h-fit">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <span className="text-sm font-bold text-white flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-emerald-400" /> Filters
             </span>
             <button
-              onClick={() => {
-                setSelectedCategory('All');
-                setSelectedCondition('All');
-                setMaxPrice(250);
-              }}
-              className="text-xs font-semibold text-slate-400 hover:text-emerald-400 flex items-center gap-1"
+              onClick={clearFilters}
+              className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1"
             >
-              <RefreshCw className="w-3 h-3" /> Reset
+              <X className="w-3 h-3" /> Reset
             </button>
           </div>
 
           {/* Category Filter */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Category</label>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Category</label>
             <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
             >
-              <option value="All">All Categories</option>
+              <option value="">All Categories</option>
               <option value="Apparel">Apparel</option>
               <option value="Outerwear">Outerwear</option>
-              <option value="Footwear">Footwear</option>
+              <option value="T-Shirts">T-Shirts</option>
               <option value="Accessories">Accessories</option>
+              <option value="Footwear">Footwear</option>
+            </select>
+          </div>
+
+          {/* Era Filter */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Vintage Era</label>
+            <select
+              value={era}
+              onChange={(e) => setEra(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Eras</option>
+              <option value="70s">70s Retro</option>
+              <option value="80s">80s Classic</option>
+              <option value="90s">90s Grunge</option>
+              <option value="Y2K">Y2K (2000s)</option>
+              <option value="Modern">Modern Pre-loved</option>
             </select>
           </div>
 
           {/* Condition Filter */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Condition</label>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Condition Grade</label>
             <select
-              value={selectedCondition}
-              onChange={(e) => setSelectedCondition(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              value={condition}
+              onChange={(e) => setCondition(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
             >
-              <option value="All">Any Condition</option>
-              <option value="Mint">Mint Vintage</option>
-              <option value="Excellent">Excellent</option>
-              <option value="Good">Good</option>
-              <option value="Fair">Fair / Distressed</option>
+              <option value="">All Conditions</option>
+              <option value="LIKE_NEW">Like New / Mint</option>
+              <option value="GENTLY_USED">Gently Used</option>
+              <option value="FLAWED">Distressed / Flawed</option>
             </select>
           </div>
 
-          {/* Price Range Slider */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-400">
-              <span className="uppercase tracking-wider">Max Price</span>
-              <span className="text-emerald-400 font-bold">{formatCurrency(maxPrice)}</span>
-            </div>
+          {/* City Filter */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Shop City</label>
             <input
-              type="range"
-              min="10"
-              max="500"
-              step="10"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. Mumbai, Bengaluru..."
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
             />
           </div>
         </div>
 
-        {/* Results Area */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Showing results for fast search query</span>
-            <div className="flex items-center gap-1">
-              <ArrowUpDown className="w-3.5 h-3.5" /> Sort: Newest First
-            </div>
+        {/* Results Grid */}
+        <div className="lg:col-span-3">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs text-slate-400">
+              Showing <strong className="text-white">{items.length}</strong> items • Indexed via{' '}
+              <span className="text-emerald-400 font-semibold">{searchSource}</span>
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {mockSearchResults.map((res) => (
-              <div key={res.id} className="glass-card rounded-2xl border border-slate-800 p-4 flex gap-4 items-center">
-                <img src={res.image} alt={res.title} className="w-24 h-24 rounded-xl object-cover shrink-0" />
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                    {res.condition}
-                  </span>
-                  <h4 className="font-bold text-sm text-slate-100 line-clamp-1">{res.title}</h4>
-                  <p className="text-xs text-slate-400">Sold by {res.shop}</p>
-                  <p className="font-black text-emerald-400 text-sm">{formatCurrency(res.price)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="h-72 rounded-2xl bg-slate-900/50 animate-pulse border border-slate-800" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-slate-900/30 border border-slate-800 text-slate-400 text-sm">
+              No items matching your search criteria. Try clearing filters.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/item/${item.id}`}
+                  className="group rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden hover:border-emerald-500/50 transition-all flex flex-col justify-between"
+                >
+                  <div className="relative aspect-square bg-slate-950 overflow-hidden">
+                    <img
+                      src={item.images?.[0] || 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80'}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 text-[10px] text-emerald-400 font-bold border border-emerald-500/30">
+                      {item.era || 'Vintage'}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.description}</p>
+                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-800">
+                      <span className="text-base font-bold text-white">₹{item.price}</span>
+                      <span className="text-xs text-slate-400">{item.condition?.replace('_', ' ') || 'LIKE NEW'}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

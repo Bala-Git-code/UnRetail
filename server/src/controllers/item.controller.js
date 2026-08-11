@@ -1,37 +1,34 @@
-import { Request, Response } from 'express';
-import prisma from '../prisma/client';
-import { AuthRequest } from '../middlewares/auth.middleware';
-import { syncItemToMeilisearch, removeItemFromMeilisearch, searchItemsInMeilisearch } from '../services/meili.service';
+import prisma from '../prisma/client.js';
+import { syncItemToMeilisearch, removeItemFromMeilisearch, searchItemsInMeilisearch } from '../services/meili.service.js';
 
-export const getItems = async (req: Request, res: Response): Promise<void> => {
+export const getItems = async (req, res) => {
   try {
     const { query, category, era, condition, city, status = 'AVAILABLE', limit = '20', page = '1' } = req.query;
 
     if (query && typeof query === 'string') {
       const hits = await searchItemsInMeilisearch(query, { category, era, condition, status });
       if (hits) {
-        res.status(200).json({
+        return res.status(200).json({
           success: true,
           source: 'meilisearch',
           data: hits,
           total: hits.length,
         });
-        return;
       }
     }
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 20;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const whereClause: any = {};
-    if (status) whereClause.status = status as any;
-    if (category) whereClause.category = category as string;
-    if (era) whereClause.era = era as string;
-    if (condition) whereClause.condition = condition as any;
+    const whereClause = {};
+    if (status) whereClause.status = status;
+    if (category) whereClause.category = category;
+    if (era) whereClause.era = era;
+    if (condition) whereClause.condition = condition;
     if (city) {
       whereClause.shop = {
-        city: { contains: city as string, mode: 'insensitive' },
+        city: { contains: city, mode: 'insensitive' },
       };
     }
 
@@ -57,7 +54,7 @@ export const getItems = async (req: Request, res: Response): Promise<void> => {
         prisma.item.count({ where: whereClause }),
       ]);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         source: 'database',
         data: items,
@@ -69,7 +66,7 @@ export const getItems = async (req: Request, res: Response): Promise<void> => {
         },
       });
     } catch (dbError) {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         source: 'mock',
         data: [
@@ -102,14 +99,14 @@ export const getItems = async (req: Request, res: Response): Promise<void> => {
         ],
       });
     }
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const getItemById = async (req: Request, res: Response): Promise<void> => {
+export const getItemById = async (req, res) => {
   try {
-    const itemId = req.params.itemId as string;
+    const { itemId } = req.params;
 
     try {
       const item = await prisma.item.findUnique({
@@ -126,13 +123,12 @@ export const getItemById = async (req: Request, res: Response): Promise<void> =>
       });
 
       if (!item) {
-        res.status(404).json({ success: false, error: 'Item not found' });
-        return;
+        return res.status(404).json({ success: false, error: 'Item not found' });
       }
 
-      res.status(200).json({ success: true, data: item });
+      return res.status(200).json({ success: true, data: item });
     } catch (dbError) {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: {
           id: itemId,
@@ -161,18 +157,17 @@ export const getItemById = async (req: Request, res: Response): Promise<void> =>
         },
       });
     }
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const createItem = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createItem = async (req, res) => {
   try {
     const { shopId, title, description, price, category, size, era, condition, images } = req.body;
 
     if (!title || !price || !category || !shopId) {
-      res.status(400).json({ success: false, error: 'Missing required item fields (title, price, category, shopId)' });
-      return;
+      return res.status(400).json({ success: false, error: 'Missing required item fields (title, price, category, shopId)' });
     }
 
     let newItem;
@@ -214,19 +209,19 @@ export const createItem = async (req: AuthRequest, res: Response): Promise<void>
 
     await syncItemToMeilisearch(newItem);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Item created and synced to search index successfully',
       data: newItem,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const updateItem = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateItem = async (req, res) => {
   try {
-    const itemId = req.params.itemId as string;
+    const { itemId } = req.params;
     const updateData = req.body;
 
     let updatedItem;
@@ -241,19 +236,19 @@ export const updateItem = async (req: AuthRequest, res: Response): Promise<void>
 
     await syncItemToMeilisearch(updatedItem);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Item updated successfully',
       data: updatedItem,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const deleteItem = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteItem = async (req, res) => {
   try {
-    const itemId = req.params.itemId as string;
+    const { itemId } = req.params;
 
     try {
       await prisma.item.delete({ where: { id: itemId } });
@@ -263,11 +258,11 @@ export const deleteItem = async (req: AuthRequest, res: Response): Promise<void>
 
     await removeItemFromMeilisearch(itemId);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Item deleted and removed from search index',
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

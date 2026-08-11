@@ -1,14 +1,12 @@
-import { Request, Response } from 'express';
-import prisma from '../prisma/client';
-import { AuthRequest } from '../middlewares/auth.middleware';
+import prisma from '../prisma/client.js';
 
-export const getShops = async (req: Request, res: Response): Promise<void> => {
+export const getShops = async (req, res) => {
   try {
     const { city, search } = req.query;
 
-    const whereClause: any = {};
-    if (city) whereClause.city = { contains: city as string, mode: 'insensitive' };
-    if (search) whereClause.shopName = { contains: search as string, mode: 'insensitive' };
+    const whereClause = {};
+    if (city) whereClause.city = { contains: city, mode: 'insensitive' };
+    if (search) whereClause.shopName = { contains: search, mode: 'insensitive' };
 
     try {
       const shops = await prisma.shop.findMany({
@@ -24,9 +22,9 @@ export const getShops = async (req: Request, res: Response): Promise<void> => {
         orderBy: { createdAt: 'desc' },
       });
 
-      res.status(200).json({ success: true, data: shops });
+      return res.status(200).json({ success: true, data: shops });
     } catch (dbError) {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: [
           {
@@ -62,14 +60,14 @@ export const getShops = async (req: Request, res: Response): Promise<void> => {
         ],
       });
     }
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const getShopById = async (req: Request, res: Response): Promise<void> => {
+export const getShopById = async (req, res) => {
   try {
-    const shopId = req.params.shopId as string;
+    const { shopId } = req.params;
 
     try {
       const shop = await prisma.shop.findUnique({
@@ -81,13 +79,12 @@ export const getShopById = async (req: Request, res: Response): Promise<void> =>
       });
 
       if (!shop) {
-        res.status(404).json({ success: false, error: 'Shop not found' });
-        return;
+        return res.status(404).json({ success: false, error: 'Shop not found' });
       }
 
-      res.status(200).json({ success: true, data: shop });
+      return res.status(200).json({ success: true, data: shop });
     } catch (err) {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: {
           id: shopId,
@@ -100,19 +97,18 @@ export const getShopById = async (req: Request, res: Response): Promise<void> =>
         },
       });
     }
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const createShop = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createShop = async (req, res) => {
   try {
     const { shopName, city, address } = req.body;
     const ownerId = req.user?.id;
 
     if (!shopName || !city || !address || !ownerId) {
-      res.status(400).json({ success: false, error: 'shopName, city, address, and ownerId are required' });
-      return;
+      return res.status(400).json({ success: false, error: 'shopName, city, address, and ownerId are required' });
     }
 
     const slug = shopName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -142,19 +138,19 @@ export const createShop = async (req: AuthRequest, res: Response): Promise<void>
       };
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Shop created successfully. Pending admin verification.',
       data: newShop,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const verifyShop = async (req: AuthRequest, res: Response): Promise<void> => {
+export const verifyShop = async (req, res) => {
   try {
-    const shopId = req.params.shopId as string;
+    const { shopId } = req.params;
 
     let updatedShop;
     try {
@@ -166,12 +162,12 @@ export const verifyShop = async (req: AuthRequest, res: Response): Promise<void>
       updatedShop = { id: shopId, isVerified: true };
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Shop verified successfully',
       data: updatedShop,
     });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

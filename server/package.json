@@ -2,15 +2,15 @@
   "name": "unretail-server",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/app.js",
+  "type": "module",
+  "main": "src/app.js",
   "scripts": {
-    "dev": "tsx src/app.ts",
-    "build": "tsc",
-    "start": "node dist/app.js",
-    "prisma:generate": "prisma generate --schema=src/prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema=src/prisma/schema.prisma",
-    "seed": "tsx scripts/seed.ts",
-    "sync-search": "tsx scripts/sync-search.ts"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "db:migrate": "npx prisma migrate dev --schema=src/prisma/schema.prisma",
+    "db:generate": "npx prisma generate --schema=src/prisma/schema.prisma",
+    "seed": "node scripts/seed.js",
+    "sync-search": "node scripts/sync-search.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -25,12 +25,7 @@
     "razorpay": "^2.9.5"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/jsonwebtoken": "^9.0.8",
-    "@types/node": "^22.13.4",
-    "prisma": "^5.22.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "nodemon": "^3.1.9",
+    "prisma": "^5.22.0"
   }
 }

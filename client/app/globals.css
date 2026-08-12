@@ -3,22 +3,62 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen selection:bg-emerald-500 selection:text-white;
+    @apply bg-street-black text-zinc-100 antialiased min-h-screen selection:bg-neon-lime selection:text-black;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Glassmorphism helpers */
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Editorial Glassmorphism & High-Contrast Cards */
 .glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(18, 18, 21, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(24, 24, 27, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.badge-condition-like-new {
+  @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/30;
+}
+
+.badge-condition-gently-used {
+  @apply bg-amber-500/10 text-amber-400 border border-amber-500/30;
+}
+
+.badge-condition-flawed {
+  @apply bg-rose-500/10 text-rose-400 border border-rose-500/30;
+}
+
+.street-btn-primary {
+  @apply bg-neon-lime text-black font-bold uppercase tracking-wider px-6 py-3 rounded-none hover:bg-white transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] active:translate-x-0.5 active:translate-y-0.5;
+}
+
+.street-btn-secondary {
+  @apply bg-zinc-900 text-zinc-100 border border-zinc-700 font-semibold uppercase tracking-wider px-6 py-3 rounded-none hover:bg-zinc-800 hover:border-zinc-500 transition-all duration-200;
 }

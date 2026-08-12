@@ -1,11 +1,7 @@
-import { MeiliSearch } from 'meilisearch';
+import meilisearchClient, { ITEMS_INDEX } from '../../config/meilisearch.js';
 
-const client = new MeiliSearch({
-  host: process.env.MEILISEARCH_HOST || 'http://localhost:7700',
-  apiKey: process.env.MEILISEARCH_ADMIN_KEY || 'masterKey',
-});
-
-export const ITEMS_INDEX = 'items';
+const client = meilisearchClient;
+export { ITEMS_INDEX };
 
 export const syncItemToMeilisearch = async (item) => {
   try {

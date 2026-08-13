@@ -53,7 +53,39 @@ export default function MerchantListingsPage() {
     }
   };
 
-  const filteredItems = items.filter((i) => {
+  const fallbackMerchantItems = [
+    {
+      id: 'item-101',
+      title: '1990s Vintage Levi 501 Heavyweight Denim',
+      price: 5499,
+      size: 'W32 L30',
+      era: '90s',
+      status: 'AVAILABLE',
+      images: ['/images/denim_vintage.png'],
+    },
+    {
+      id: 'item-102',
+      title: 'Distressed Harley Davidson Leather Jacket',
+      price: 12500,
+      size: 'L',
+      era: '80s',
+      status: 'AVAILABLE',
+      images: ['/images/leather_jacket.png'],
+    },
+    {
+      id: 'item-103',
+      title: 'Y2K Stussy Graphic Heavyweight Tee',
+      price: 2800,
+      size: 'XL',
+      era: 'Y2K',
+      status: 'SOLD',
+      images: ['/images/graphic_tee.png'],
+    },
+  ];
+
+  const activeItems = items.length > 0 ? items : fallbackMerchantItems;
+
+  const filteredItems = activeItems.filter((i) => {
     if (statusFilter === 'ALL') return true;
     return i.status === statusFilter;
   });
@@ -117,8 +149,7 @@ export default function MerchantListingsPage() {
           <div className="divide-y divide-zinc-800">
             {filteredItems.map((item) => {
               const img =
-                item.images?.[0] ||
-                'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80';
+                item.images?.[0] || '/images/denim_vintage.png';
               const isSold = item.status === 'SOLD';
 
               return (
@@ -128,7 +159,15 @@ export default function MerchantListingsPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-20 bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 relative">
-                      <img src={img} alt={item.title} className="w-full h-full object-cover" />
+                      <img
+                        src={img}
+                        alt={item.title}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/images/denim_vintage.png';
+                        }}
+                        className="w-full h-full object-cover"
+                      />
                       {isSold && (
                         <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-black text-rose-400 uppercase tracking-widest">
                           SOLD

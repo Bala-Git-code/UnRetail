@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
 import { formatCurrency, formatCondition } from '@/lib/utils';
-import { Eye, ArrowRight, ShieldCheck, Tag, ShoppingBag, X, ChevronLeft, ChevronRight, Sparkles, Filter, CheckCircle2 } from 'lucide-react';
+import { Eye, ArrowRight, ShieldCheck, Tag, ShoppingBag, X, ChevronLeft, ChevronRight, Sparkles, Filter, CheckCircle2, Bookmark, Heart } from 'lucide-react';
 
 export default function FeedPage() {
   const [items, setItems] = useState([]);
@@ -14,6 +14,30 @@ export default function FeedPage() {
   const [activeImageIndex, setActiveImageIndex] = useState({});
   const [purchasing, setPurchasing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [savedGrailIds, setSavedGrailIds] = useState([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('unretail_saved_grails');
+      if (stored) {
+        try { setSavedGrailIds(JSON.parse(stored)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  const toggleSaveGrail = (itemId, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSavedGrailIds((prev) => {
+      const updated = prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('unretail_saved_grails', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
 
   useEffect(() => {
     fetchItems();
@@ -83,6 +107,56 @@ export default function FeedPage() {
 
   const categories = ['ALL', 'Apparel', 'Outerwear', 'Denim', 'Footwear', 'Accessories'];
 
+  const fallbackFeedItems = [
+    {
+      id: 'item-101',
+      title: '1990s Vintage Levi 501 Heavyweight Denim',
+      description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Heavyweight 14oz rigid denim.',
+      price: 5499,
+      category: 'Denim',
+      size: 'W32 L30',
+      era: '90s',
+      condition: 'LIKE_NEW',
+      images: [
+        '/images/denim_vintage.png',
+      ],
+      status: 'AVAILABLE',
+      shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
+    },
+    {
+      id: 'item-102',
+      title: 'Distressed Harley Davidson Leather Jacket',
+      description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece.',
+      price: 12500,
+      category: 'Outerwear',
+      size: 'L',
+      era: '80s',
+      condition: 'GENTLY_USED',
+      images: [
+        '/images/leather_jacket.png',
+      ],
+      status: 'AVAILABLE',
+      shop: { id: 'shop-2', shopName: 'Retro Vault', city: 'Bengaluru', isVerified: true, address: '108 Indiranagar, 100ft Road' },
+    },
+    {
+      id: 'item-103',
+      title: 'Y2K Stussy Graphic Heavyweight Tee',
+      description: 'Single stitch faded black graphic tee. Pre-shrunk vintage cotton drop with archival graphic.',
+      price: 2800,
+      category: 'Apparel',
+      size: 'XL',
+      era: 'Y2K',
+      condition: 'LIKE_NEW',
+      images: [
+        '/images/graphic_tee.png',
+      ],
+      status: 'AVAILABLE',
+      shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', city: 'Delhi', isVerified: false, address: '15 Hauz Khas Village' },
+    },
+  ];
+
+  const displayItems = items.length > 0 ? items : fallbackFeedItems;
+
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 p-4 md:p-8 max-w-7xl mx-auto font-sans">
       {/* Top Banner & Category Filter Ticker */}
@@ -126,20 +200,24 @@ export default function FeedPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => {
-            const images = item.images && item.images.length > 0 ? item.images : ['https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80'];
+          {displayItems.map((item) => {
+            const images = item.images && item.images.length > 0 ? item.images : ['/images/denim_vintage.png'];
             const curImgIdx = activeImageIndex[item.id] || 0;
 
             return (
               <div
                 key={item.id}
-                className="group bg-street-card border border-zinc-800 hover:border-neon-lime/80 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                className="group bg-street-card border border-zinc-800 hover:border-neon-lime/80 transition-all duration-300 flex flex-col justify-between overflow-hidden card-hover-effect"
               >
                 {/* Image Carousel Block */}
                 <div className="relative aspect-[4/5] bg-zinc-950 border-b border-zinc-800 overflow-hidden">
                   <img
-                    src={images[curImgIdx]}
+                    src={images[curImgIdx] || '/images/denim_vintage.png'}
                     alt={item.title}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/images/denim_vintage.png';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
 
@@ -191,9 +269,22 @@ export default function FeedPage() {
                     )}
                   </div>
 
-                  {/* Size Pill Overlay */}
-                  <div className="absolute top-3 right-3 font-mono text-[10px] font-black uppercase px-2.5 py-1 bg-neon-lime text-black">
-                    SIZE: {item.size || 'OS'}
+                  {/* Size Pill & Bookmark Button Overlay */}
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    <button
+                      onClick={(e) => toggleSaveGrail(item.id, e)}
+                      title={savedGrailIds.includes(item.id) ? 'Saved to Watchlist' : 'Save Item'}
+                      className={`p-1.5 border backdrop-blur-md transition-all ${
+                        savedGrailIds.includes(item.id)
+                          ? 'bg-rose-500 text-white border-rose-400'
+                          : 'bg-black/70 text-zinc-300 border-zinc-700 hover:text-white hover:border-white'
+                      }`}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${savedGrailIds.includes(item.id) ? 'fill-current' : ''}`} />
+                    </button>
+                    <span className="font-mono text-[10px] font-black uppercase px-2.5 py-1 bg-neon-lime text-black">
+                      SIZE: {item.size || 'OS'}
+                    </span>
                   </div>
 
                   {/* Quick View Button */}

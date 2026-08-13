@@ -59,9 +59,9 @@ export default function SearchPage() {
   const sizes = ['S', 'M', 'L', 'XL', 'W32 L30', 'OS'];
   const eras = ['70s', '80s', '90s', 'Y2K', 'Archival'];
   const conditions = [
-    { value: 'LIKE_NEW', label: 'Like New' },
-    { value: 'GENTLY_USED', label: 'Gently Used' },
-    { value: 'FLAWED', label: 'Flawed' },
+    { value: 'LIKE_NEW', label: 'Pristine / Like New' },
+    { value: 'GENTLY_USED', label: 'Gently Loved' },
+    { value: 'FLAWED', label: 'Vintage Character' },
   ];
   const cities = ['Mumbai', 'Bengaluru', 'Delhi', 'Kolkata'];
 
@@ -104,6 +104,49 @@ export default function SearchPage() {
             </button>
           )}
         </div>
+
+        {/* Active Filter Chips Bar */}
+        {(selectedSize || selectedEra || selectedCondition || selectedCity || query) && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 font-mono text-xs">
+            <span className="text-zinc-500 text-[11px] uppercase mr-1">Active Filters:</span>
+            {query && (
+              <span className="bg-zinc-900 text-neon-lime border border-neon-lime/40 px-2.5 py-1 flex items-center gap-1.5">
+                Query: &quot;{query}&quot;
+                <X className="w-3 h-3 cursor-pointer hover:text-white" onClick={() => setQuery('')} />
+              </span>
+            )}
+            {selectedSize && (
+              <span className="bg-zinc-900 text-white border border-zinc-700 px-2.5 py-1 flex items-center gap-1.5">
+                Size: {selectedSize}
+                <X className="w-3 h-3 cursor-pointer hover:text-rose-400" onClick={() => setSelectedSize('')} />
+              </span>
+            )}
+            {selectedEra && (
+              <span className="bg-zinc-900 text-amber-400 border border-amber-500/40 px-2.5 py-1 flex items-center gap-1.5">
+                Era: {selectedEra}
+                <X className="w-3 h-3 cursor-pointer hover:text-rose-400" onClick={() => setSelectedEra('')} />
+              </span>
+            )}
+            {selectedCondition && (
+              <span className="bg-zinc-900 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 flex items-center gap-1.5">
+                Condition: {selectedCondition}
+                <X className="w-3 h-3 cursor-pointer hover:text-rose-400" onClick={() => setSelectedCondition('')} />
+              </span>
+            )}
+            {selectedCity && (
+              <span className="bg-zinc-900 text-cyan-400 border border-cyan-500/40 px-2.5 py-1 flex items-center gap-1.5">
+                City: {selectedCity}
+                <X className="w-3 h-3 cursor-pointer hover:text-rose-400" onClick={() => setSelectedCity('')} />
+              </span>
+            )}
+            <button
+              onClick={handleClearFilters}
+              className="text-zinc-500 hover:text-rose-400 text-[11px] underline uppercase ml-2"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -250,16 +293,20 @@ export default function SearchPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item) => {
-                const img = item.images?.[0] || 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80';
+                const img = item.images?.[0] || '/images/denim_vintage.png';
                 return (
                   <div
                     key={item.id}
-                    className="bg-street-card border border-zinc-800 hover:border-neon-lime transition-all flex flex-col justify-between overflow-hidden group"
+                    className="bg-street-card border border-zinc-800 hover:border-neon-lime transition-all flex flex-col justify-between overflow-hidden group card-hover-effect"
                   >
                     <div className="relative aspect-[4/5] bg-zinc-950 overflow-hidden border-b border-zinc-800">
                       <img
                         src={img}
                         alt={item.title}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/images/denim_vintage.png';
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3 bg-black/80 font-mono text-[10px] text-emerald-400 font-bold uppercase px-2.5 py-1 border border-emerald-500/30">

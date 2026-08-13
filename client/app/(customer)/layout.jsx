@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Flame, Search, ShoppingBag, Store, UserCheck, LogOut, Menu, X, ShieldCheck } from 'lucide-react';
 
+import Logo from '@/components/Logo';
+
 export default function CustomerLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -39,13 +41,8 @@ export default function CustomerLayout({ children }) {
       <header className="sticky top-0 z-40 bg-street-black/90 backdrop-blur-md border-b border-zinc-800 px-4 md:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-neon-lime text-black font-black flex items-center justify-center text-lg shadow-[2px_2px_0px_0px_#ffffff]">
-                UR
-              </div>
-              <span className="font-black tracking-tighter text-xl text-white group-hover:text-neon-lime transition-colors">
-                UNRETAIL<span className="text-neon-lime">.</span>
-              </span>
+            <Link href="/">
+              <Logo size="sm" />
             </Link>
 
             <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-zinc-300">

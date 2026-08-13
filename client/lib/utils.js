@@ -16,12 +16,12 @@ export function formatCurrency(amount) {
 export function formatCondition(condition) {
   switch (condition) {
     case 'LIKE_NEW':
-      return 'Like New';
+      return 'Pristine / Like New';
     case 'GENTLY_USED':
-      return 'Gently Used';
+      return 'Gently Loved';
     case 'FLAWED':
-      return 'Flawed';
+      return 'Vintage Character';
     default:
-      return condition || 'Good';
+      return condition || 'Curated Quality';
   }
 }

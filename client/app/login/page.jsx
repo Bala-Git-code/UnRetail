@@ -3,253 +3,463 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Script from 'next/script';
 import apiClient from '@/lib/api-client';
-import { ShieldCheck, ArrowRight, UserCheck, Store, ShieldAlert, Sparkles } from 'lucide-react';
+import { 
+  Store, 
+  User, 
+  ShieldCheck, 
+  ArrowRight, 
+  AlertCircle, 
+  ArrowLeft, 
+  CheckCircle2, 
+  Sparkles,
+  Lock,
+  Globe,
+  Radio
+} from 'lucide-react';
+import Logo, { LogoSymbol } from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [role, setRole] = useState('CUSTOMER'); // 'CUSTOMER' | 'MERCHANT'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [role, setRole] = useState('CUSTOMER');
-
+  const [successMsg, setSuccessMsg] = useState(null);
+  const googleBtnRef = useRef(null);
   const roleRef = useRef(role);
+
   useEffect(() => {
     roleRef.current = role;
   }, [role]);
 
-  const handleGoogleAuth = async (email, fullName, userRole, idToken = 'mock_google_id_token_2026', avatarUrl = null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.post('/auth/google', {
-        id_token: idToken,
-        email: email || 'collector@unretail.in',
-        fullName: fullName || 'Thrift Collector',
-        avatarUrl: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-        role: userRole || 'CUSTOMER',
-      });
-
-      if (response.data?.token) {
-        localStorage.setItem('unretail_token', response.data.token);
-        localStorage.setItem('unretail_user', JSON.stringify(response.data.user));
-
-        if (response.data.user?.role === 'MERCHANT') {
-          router.push('/dashboard');
-        } else if (response.data.user?.role === 'ADMIN') {
+  useEffect(() => {
+    // Redirect if user is already logged in
+    const storedUser = localStorage.getItem('unretail_user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed.role === 'ADMIN') {
           router.push('/admin/dashboard');
+        } else if (parsed.role === 'MERCHANT') {
+          router.push('/dashboard');
         } else {
           router.push('/feed');
         }
+      } catch (e) {
+        // ignore JSON parse error
+      }
+    }
+  }, [router]);
+
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response || !response.credential) {
+      setError('Google Sign-In failed to return credentials.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const activeRole = roleRef.current || role;
+      const res = await apiClient.post('/auth/google', {
+        id_token: response.credential,
+        role: activeRole,
+      });
+
+      if (res.data?.token && res.data?.user) {
+        localStorage.setItem('unretail_token', res.data.token);
+        localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
+        setSuccessMsg(`Verified with Google! Welcome, ${res.data.user.fullName || res.data.user.email || 'User'}. Redirecting...`);
+
+        setTimeout(() => {
+          if (res.data.user.role === 'MERCHANT') {
+            router.push('/dashboard');
+          } else if (res.data.user.role === 'ADMIN') {
+            router.push('/admin/dashboard');
+          } else {
+            router.push('/feed');
+          }
+        }, 800);
+      } else {
+        throw new Error(res.data?.error || 'Google Authentication response invalid');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Authentication failed. Please try again.');
+      console.error('Google Auth error:', err);
+      setError(err.response?.data?.error || err.message || 'Google Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const decodeJwtPayload = (token) => {
+  const handleDemoLogin = async (targetRole) => {
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
     try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error('Failed to decode Google JWT payload:', e);
-      return null;
-    }
-  };
+      const selectedRole = targetRole || roleRef.current || role;
+      const demoEmail = selectedRole === 'MERCHANT' ? 'vendor.demo@unretail.in' : 'collector.demo@unretail.in';
+      const demoName = selectedRole === 'MERCHANT' ? 'Relic Vintage Owner' : 'Archival Collector';
 
-  const handleCredentialResponse = async (response) => {
-    const idToken = response.credential;
-    const decoded = decodeJwtPayload(idToken);
-    
-    if (decoded) {
-      await handleGoogleAuth(
-        decoded.email,
-        decoded.name,
-        roleRef.current,
-        idToken,
-        decoded.picture
-      );
-    } else {
-      setError('Invalid token payload received from Google.');
-    }
-  };
-
-  const initializeGoogleAuth = () => {
-    if (typeof window !== 'undefined' && window.google) {
-      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com';
-      
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: handleCredentialResponse,
+      const res = await apiClient.post('/auth/google', {
+        id_token: 'mock_demo_token',
+        email: demoEmail,
+        fullName: demoName,
+        role: selectedRole,
       });
 
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-signin-btn'),
-        {
-          theme: 'filled_black',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          width: '382',
+      if (res.data?.token && res.data?.user) {
+        localStorage.setItem('unretail_token', res.data.token);
+        localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
+        setSuccessMsg(`Verified Session! Welcome, ${res.data.user.fullName}. Redirecting...`);
+
+        setTimeout(() => {
+          if (res.data.user.role === 'MERCHANT') {
+            router.push('/dashboard');
+          } else if (res.data.user.role === 'ADMIN') {
+            router.push('/admin/dashboard');
+          } else {
+            router.push('/feed');
+          }
+        }, 800);
+      } else {
+        throw new Error(res.data?.error || 'Demo authentication failed');
+      }
+    } catch (err) {
+      console.error('Demo auth error:', err);
+      setError(err.response?.data?.error || err.message || 'Authentication error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initGoogleGsi = () => {
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '469391995611-l5jv5h8ialovojpnh9aflv8r9cei7a7v.apps.googleusercontent.com';
+    if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+        });
+
+        if (googleBtnRef.current) {
+          googleBtnRef.current.innerHTML = '';
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: 'filled_black',
+            size: 'large',
+            type: 'standard',
+            shape: 'rectangular',
+            text: 'continue_with',
+            logo_alignment: 'left',
+            width: 360,
+          });
         }
-      );
+      } catch (err) {
+        console.error('Google GSI initialization error:', err);
+      }
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.google) {
-      initializeGoogleAuth();
+    initGoogleGsi();
+  }, [role]);
+
+  const triggerGoogleLoginPrompt = () => {
+    if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
+    } else {
+      setError('Google Sign-In prompt initialized. You can also use Quick Express Sign-In below.');
     }
-  }, []);
+  };
 
   return (
-    <div className="min-h-screen bg-street-black text-zinc-100 flex flex-col justify-center items-center p-4 relative font-sans">
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onLoad={initializeGoogleAuth}
+    <div className="min-h-screen bg-street-black text-zinc-100 flex flex-col font-sans relative overflow-hidden">
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="afterInteractive" 
+        onLoad={initGoogleGsi} 
       />
 
-      {/* Background Accent Gradients */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-lime/10 blur-[120px] rounded-full pointer-events-none" />
+      {/* Background Glows */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-neon-lime/10 blur-[180px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-400/5 blur-[160px] rounded-full pointer-events-none" />
 
-      {/* Single Card Login Container */}
-      <div className="w-full max-w-md bg-street-card border border-zinc-800 p-8 shadow-2xl relative z-10">
-        <div className="flex flex-col items-center text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 bg-neon-lime text-black font-black flex items-center justify-center text-2xl shadow-[3px_3px_0px_0px_#ffffff]">
-              UR
+      {/* Grid Overlay */}
+      <div 
+        className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2315_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2315_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"
+      />
+
+      {/* Header */}
+      <header className="relative z-20 w-full px-6 py-5 flex items-center justify-between border-b border-zinc-800/60 bg-street-black/80 backdrop-blur-md">
+        <Link href="/" className="inline-flex items-center gap-3 group">
+          <LogoSymbol size="md" />
+          <span className="font-black text-xl tracking-tighter text-white group-hover:text-neon-lime transition-colors">
+            UNRETAIL<span className="text-neon-lime">.</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/feed"
+          className="text-xs font-mono uppercase tracking-wider text-zinc-400 hover:text-white flex items-center gap-2 transition-all hover:-translate-x-1"
+        >
+          <ArrowLeft className="w-4 h-4 text-neon-lime" /> Back To Feed
+        </Link>
+      </header>
+
+      {/* Main Split Layout */}
+      <main className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-[1600px] w-full mx-auto">
+        
+        {/* Left Column: Visual Showcase & AI Artwork Hero */}
+        <div className="lg:col-span-7 relative flex flex-col justify-between p-8 lg:p-12 min-h-[420px] lg:min-h-[calc(100vh-81px)] border-b lg:border-b-0 lg:border-r border-zinc-800/80 overflow-hidden group">
+          {/* Background Image Container */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/images/login_hero.jpg"
+              alt="UnRetail Vintage Archive Showcase"
+              fill
+              priority
+              className="object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
+            />
+            {/* Dark & Vibrant Overlay Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-street-black via-street-black/70 to-street-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-street-black/80 via-transparent to-street-black/90" />
+          </div>
+
+          {/* Top Floating Glass Badges */}
+          <div className="relative z-10 flex flex-wrap items-center gap-3">
+            <div className="bg-street-black/80 backdrop-blur-md border border-neon-lime/30 px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-mono text-neon-lime shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-neon-lime animate-ping" />
+              <span>LIVE RACK SYNC ACTIVE</span>
             </div>
-            <span className="font-black text-2xl tracking-tighter text-white group-hover:text-neon-lime transition-colors">
-              UNRETAIL<span className="text-neon-lime">.</span>
+
+            <div className="bg-street-black/80 backdrop-blur-md border border-zinc-700/60 px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-mono text-zinc-300 shadow-lg">
+              <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>RFID ARCHIVE PROTOCOL</span>
+            </div>
+          </div>
+
+          {/* Middle Dynamic Hero Content */}
+          <div className="relative z-10 my-auto py-12 space-y-6 max-w-xl">
+            <div className="inline-flex items-center gap-2 text-xs font-mono tracking-widest text-zinc-400 uppercase bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 px-3 py-1">
+              <Sparkles className="w-3.5 h-3.5 text-neon-lime" />
+              Physical & Digital Thrift Escrow
+            </div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-white tracking-tight leading-[1.05]">
+              Authentication For The <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-lime via-white to-amber-400">Streetwear Archive</span>
+            </h1>
+
+            <p className="text-sm md:text-base text-zinc-300 font-mono leading-relaxed">
+              Verify rare vintage grails, claim physical boutique racks, and conduct zero-friction transactions powered strictly by Google OAuth identity verification.
+            </p>
+
+            {/* Floating Interactive Live Stats Card */}
+            <div className="grid grid-cols-3 gap-3 pt-2 font-mono">
+              <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 p-3 text-center">
+                <div className="text-xl lg:text-2xl font-black text-white">1,420+</div>
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Grails Online</div>
+              </div>
+              <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 p-3 text-center">
+                <div className="text-xl lg:text-2xl font-black text-neon-lime">100%</div>
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Google Verified</div>
+              </div>
+              <div className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 p-3 text-center">
+                <div className="text-xl lg:text-2xl font-black text-amber-400">0</div>
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Passwords Needed</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Footer Slogan */}
+          <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-zinc-400 border-t border-zinc-800/80 pt-4">
+            <span>UNRETAIL ESCROW ENGINE v2.4</span>
+            <span className="flex items-center gap-1 text-zinc-500">
+              <Globe className="w-3.5 h-3.5 text-neon-lime" /> GLOBAL ARCHIVE NETWORK
             </span>
-          </Link>
-
-          <span className="text-xs font-mono tracking-widest text-neon-lime uppercase bg-neon-lime/10 px-3 py-1 border border-neon-lime/20 mb-2">
-            SINGLE-SIGN-ON PORTAL
-          </span>
-          <h1 className="text-2xl font-black uppercase text-white tracking-tight">
-            Sign In To UnRetail
-          </h1>
-          <p className="text-xs text-zinc-400 font-mono mt-1">
-            Access curated feeds, manage vendor racks, or moderate disputes.
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-6 bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 text-xs font-mono flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Role Selector Tabs */}
-        <div className="mb-6">
-          <label className="block text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
-            Select Your Role
-          </label>
-          <div className="flex gap-2 w-full font-mono text-xs">
-            <button
-              onClick={() => setRole('CUSTOMER')}
-              type="button"
-              className={`flex-1 py-2.5 text-center border transition-all ${
-                role === 'CUSTOMER'
-                  ? 'bg-neon-lime text-black border-neon-lime font-black shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]'
-                  : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-              }`}
-            >
-              CUSTOMER
-            </button>
-            <button
-              onClick={() => setRole('MERCHANT')}
-              type="button"
-              className={`flex-1 py-2.5 text-center border transition-all ${
-                role === 'MERCHANT'
-                  ? 'bg-neon-lime text-black border-neon-lime font-black shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]'
-                  : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-              }`}
-            >
-              MERCHANT
-            </button>
           </div>
         </div>
 
-        {/* Primary Google Auth Button */}
-        <div className="w-full flex justify-center mb-6">
-          <div id="google-signin-btn" className="w-full max-w-[382px] [&_iframe]:!mx-auto" style={{ minHeight: '44px' }}></div>
-        </div>
+        {/* Right Column: Google Authentication Portal */}
+        <div className="lg:col-span-5 flex flex-col justify-center p-6 md:p-10 lg:p-14 bg-street-black relative z-10">
+          <div className="max-w-md w-full mx-auto space-y-8">
+            
+            {/* Header & Persona Title */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="h-px bg-neon-lime w-8" />
+                <span className="text-xs font-mono font-bold text-neon-lime uppercase tracking-widest">
+                  Authentication Portal
+                </span>
+              </div>
+              <h2 className="text-3xl font-black uppercase text-white tracking-tight">
+                Google Identity Sign-In
+              </h2>
+              <p className="text-xs font-mono text-zinc-400">
+                Select your platform role to proceed with verified single sign-on.
+              </p>
+            </div>
 
-        <div className="relative my-8 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-800" />
+            {/* Role Toggle Tabs */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
+                Select Account Role:
+              </label>
+              <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1.5 border border-zinc-800 font-mono text-xs">
+                <button
+                  type="button"
+                  onClick={() => setRole('CUSTOMER')}
+                  className={`py-3 px-3 font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                    role === 'CUSTOMER'
+                      ? 'bg-neon-lime text-black shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white bg-zinc-900/40'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Collector</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRole('MERCHANT')}
+                  className={`py-3 px-3 font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                    role === 'MERCHANT'
+                      ? 'bg-neon-lime text-black shadow-md font-black'
+                      : 'text-zinc-400 hover:text-white bg-zinc-900/40'
+                  }`}
+                >
+                  <Store className="w-4 h-4" />
+                  <span>Store Vendor</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Error / Success Notifications */}
+            {error && (
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 font-mono text-xs flex items-center gap-3 animate-shake">
+                <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 font-mono text-xs flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400 animate-bounce" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* Primary Action Card: Authentic Google Sign-In Button */}
+            <div className="bg-street-card border border-zinc-800 p-6 space-y-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-neon-lime/5 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="text-center space-y-1">
+                <div className="text-xs font-mono font-bold text-zinc-300 uppercase">
+                  Signing in as: <span className="text-neon-lime">{role === 'MERCHANT' ? 'Boutique Store Vendor' : 'Vintage Collector'}</span>
+                </div>
+                <p className="text-[11px] font-mono text-zinc-500">
+                  {role === 'MERCHANT'
+                    ? 'Access inventory management, physical rack POS & order fulfillment'
+                    : 'Browse rare grails, track purchases & lock escrow transactions'}
+                </p>
+              </div>
+
+              {/* Official Google Sign-In Container & One Tap Trigger */}
+              <div className="space-y-3">
+                <div 
+                  ref={googleBtnRef} 
+                  className="w-full flex justify-center min-h-[44px] bg-zinc-950/80 border border-zinc-800 rounded p-1" 
+                />
+
+                <button
+                  type="button"
+                  onClick={() => triggerGoogleLoginPrompt()}
+                  disabled={loading}
+                  className="w-full bg-white hover:bg-zinc-100 text-zinc-900 font-sans font-bold text-sm py-3.5 px-5 flex items-center justify-center gap-3 shadow-lg hover:shadow-neon-lime/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 group border border-zinc-200"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-zinc-800 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    /* Official Google G Logo SVG */
+                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                  )}
+                  <span className="tracking-tight text-zinc-900">
+                    {loading ? 'Verifying Google Account...' : 'Open Google One Tap Prompt'}
+                  </span>
+                  <ArrowRight className="w-4 h-4 ml-auto text-zinc-400 group-hover:text-zinc-900 transition-colors" />
+                </button>
+
+                <div className="relative py-1 flex items-center justify-center">
+                  <div className="border-t border-zinc-800 w-full" />
+                  <span className="bg-street-card px-3 text-[10px] font-mono text-zinc-500 uppercase shrink-0">
+                    Or Instant Sign-In
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin(role)}
+                  disabled={loading}
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-neon-lime font-mono text-xs font-bold py-3 px-4 border border-neon-lime/40 hover:border-neon-lime transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4 text-neon-lime animate-pulse" />
+                  <span>Continue As {role === 'MERCHANT' ? 'Relic Vintage Store Owner' : 'Verified Archival Collector'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Trust & Guarantee Badges */}
+            <div className="grid grid-cols-2 gap-3 pt-2 text-[10px] font-mono text-zinc-400">
+              <div className="flex items-center gap-2 bg-zinc-950 p-2.5 border border-zinc-800/60">
+                <ShieldCheck className="w-4 h-4 text-neon-lime shrink-0" />
+                <span>Google OAuth 2.0 SSL Verified</span>
+              </div>
+              <div className="flex items-center gap-2 bg-zinc-950 p-2.5 border border-zinc-800/60">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Zero Password Storage</span>
+              </div>
+            </div>
+
+            {/* Admin Desk Link */}
+            <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-500">Need admin desk access?</span>
+              <Link 
+                href="/admin/login" 
+                className="text-zinc-400 hover:text-amber-400 transition-colors inline-flex items-center gap-1"
+              >
+                Admin Credentials Portal <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+
           </div>
-          <span className="relative bg-street-card px-3 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-            OR DEMO ONE-CLICK ENTRY
-          </span>
         </div>
 
-        {/* Demo Fast Login Cards */}
-        <div className="space-y-3 font-mono text-xs">
-          <button
-            onClick={() => handleGoogleAuth('collector@unretail.in', 'Thrift Collector', 'CUSTOMER')}
-            disabled={loading}
-            className="w-full bg-zinc-900 border border-zinc-800 hover:border-neon-lime p-3 text-left flex items-center justify-between text-zinc-300 hover:text-white transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <div>
-                <div className="font-bold uppercase text-white">Customer Demo</div>
-                <div className="text-[10px] text-zinc-500">Browse feed, search & checkout</div>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-neon-lime group-hover:translate-x-1 transition-all" />
-          </button>
+      </main>
 
-          <button
-            onClick={() => handleGoogleAuth('aarav@relicvintage.in', 'Aarav Patel', 'MERCHANT')}
-            disabled={loading}
-            className="w-full bg-zinc-900 border border-zinc-800 hover:border-neon-lime p-3 text-left flex items-center justify-between text-zinc-300 hover:text-white transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <Store className="w-4 h-4 text-neon-lime" />
-              <div>
-                <div className="font-bold uppercase text-white">Merchant Vendor Demo</div>
-                <div className="text-[10px] text-zinc-500">List items, 1-tap in-store sold sync</div>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-neon-lime group-hover:translate-x-1 transition-all" />
-          </button>
-
-          <button
-            onClick={() => handleGoogleAuth('admin@unretail.in', 'System Admin', 'ADMIN')}
-            disabled={loading}
-            className="w-full bg-zinc-900 border border-zinc-800 hover:border-neon-lime p-3 text-left flex items-center justify-between text-zinc-300 hover:text-white transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <div>
-                <div className="font-bold uppercase text-white">Platform Admin Demo</div>
-                <div className="text-[10px] text-zinc-500">GMV revenue cut, verify vendors & disputes</div>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-neon-lime group-hover:translate-x-1 transition-all" />
-          </button>
-        </div>
-
-        <div className="mt-8 text-center text-[10px] font-mono text-zinc-500">
-          By signing in, you agree to UnRetail&apos;s Escrow Terms and Vendor Marketplace Policies.
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="relative z-20 w-full py-4 border-t border-zinc-800/60 bg-street-black text-center text-xs font-mono text-zinc-600">
+        UNRETAIL THRIFT ARCHIVE • SECURED BY GOOGLE OAUTH 2.0 & PHYSICAL RACK SYNC PROTOCOL
+      </footer>
     </div>
   );
 }

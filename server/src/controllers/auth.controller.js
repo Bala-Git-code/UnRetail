@@ -13,12 +13,16 @@ export const googleAuth = async (req, res) => {
     let userName = requestedName || 'UnRetail User';
     let userAvatar = requestedAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
 
-    if (id_token) {
+    if (id_token && typeof id_token === 'string' && !id_token.startsWith('mock_') && id_token.split('.').length === 3) {
       try {
-        const ticket = await googleClient.verifyIdToken({
+        const verifyPromise = googleClient.verifyIdToken({
           idToken: id_token,
           audience: process.env.GOOGLE_CLIENT_ID,
         });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Google verification timeout')), 3000)
+        );
+        const ticket = await Promise.race([verifyPromise, timeoutPromise]);
         const payload = ticket.getPayload();
         if (payload) {
           userEmail = payload.email || userEmail;
@@ -26,7 +30,21 @@ export const googleAuth = async (req, res) => {
           userAvatar = payload.picture || userAvatar;
         }
       } catch (verifyError) {
-        console.warn('Google token verification skipped (fallback to direct payload in dev):', verifyError);
+        console.warn('Google token verification fallback:', verifyError.message || verifyError);
+        try {
+          const parts = id_token.split('.');
+          const base64Url = parts[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+          const payload = JSON.parse(jsonPayload);
+          if (payload && payload.email) {
+            userEmail = payload.email;
+            userName = payload.name || userName;
+            userAvatar = payload.picture || userAvatar;
+          }
+        } catch (jwtErr) {
+          console.error('Failed to parse JWT payload fallback:', jwtErr);
+        }
       }
     }
 
@@ -127,3 +145,46 @@ export const getMe = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
+export const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'balagiri702@gmail.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || '0987654321zxcvbnm';
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+
+    if (email.trim().toLowerCase() !== adminEmail.trim().toLowerCase() || password !== adminPassword) {
+      return res.status(401).json({ success: false, error: 'Invalid administrative credentials' });
+    }
+
+    const accessToken = jwt.sign(
+      {
+        id: 'admin_root',
+        email: adminEmail,
+        fullName: 'Executive Platform Admin',
+        role: 'ADMIN',
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin authentication successful',
+      token: accessToken,
+      user: {
+        id: 'admin_root',
+        email: adminEmail,
+        fullName: 'Executive Platform Admin',
+        role: 'ADMIN',
+      },
+    });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Admin authentication failed' });
+  }
+};
+

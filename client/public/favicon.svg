@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="favSilver" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="30%" stop-color="#E5E7EB" />
+      <stop offset="60%" stop-color="#9CA3AF" />
+      <stop offset="100%" stop-color="#374151" />
+    </linearGradient>
+
+    <linearGradient id="favLime" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FACC15" />
+      <stop offset="40%" stop-color="#BEF264" />
+      <stop offset="100%" stop-color="#65A30D" />
+    </linearGradient>
+
+    <filter id="favGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <g transform="translate(0, 0)">
+    <!-- Silver Teardrop Loop -->
+    <path d="M 62,25 C 98,25 125,50 125,86 C 125,122 98,147 62,147 C 32,147 25,125 25,86 C 25,47 32,25 62,25 Z M 62,50 C 45,50 43,65 43,86 C 43,107 45,122 62,122 C 83,122 100,105 100,86 C 100,67 83,50 62,50 Z" 
+          fill="url(#favSilver)" fill-rule="evenodd" />
+
+    <!-- Neon Lime Ring -->
+    <path d="M 145,25 C 181,25 210,54 210,90 C 210,126 181,155 145,155 C 109,155 80,126 80,90 C 80,54 109,25 145,25 Z M 145,50 C 123,50 105,68 105,90 C 105,112 123,130 145,130 C 167,130 185,112 185,90 C 185,68 167,50 145,50 Z" 
+          fill="url(#favLime)" fill-rule="evenodd" filter="url(#favGlow)" />
+  </g>
+</svg>

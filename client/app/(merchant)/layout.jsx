@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, PlusCircle, Layers, ShoppingBag, Store, ShieldCheck, LogOut, ArrowLeft } from 'lucide-react';
 
+import { LogoSymbol } from '@/components/Logo';
+import Logo from '@/components/Logo';
+
 export default function MerchantLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,13 +38,11 @@ export default function MerchantLayout({ children }) {
       {/* Desktop Sidebar Navigation */}
       <aside className="hidden md:flex w-64 bg-street-card border-r border-zinc-800 flex-col justify-between p-6 shrink-0 sticky top-0 h-screen font-mono text-xs">
         <div className="space-y-8">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-neon-lime text-black font-black flex items-center justify-center text-lg shadow-[2px_2px_0px_0px_#ffffff]">
-              UR
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <LogoSymbol size="sm" />
             <div className="flex flex-col">
-              <span className="font-black text-lg tracking-tighter text-white">MERCHANT VENDOR</span>
-              <span className="text-[9px] text-neon-lime uppercase tracking-widest">IN-STORE RACK PORTAL</span>
+              <span className="font-black text-base tracking-tighter text-white">MERCHANT VENDOR</span>
+              <span className="text-[9px] text-neon-lime uppercase tracking-widest font-bold">IN-STORE RACK PORTAL</span>
             </div>
           </Link>
 
@@ -90,9 +91,7 @@ export default function MerchantLayout({ children }) {
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-street-black/90 backdrop-blur-md border-b border-zinc-800 px-4 md:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3 md:hidden">
-            <div className="w-7 h-7 bg-neon-lime text-black font-black flex items-center justify-center text-sm">
-              UR
-            </div>
+            <LogoSymbol size="xs" />
             <span className="font-black tracking-tighter text-base text-white">VENDOR PORTAL</span>
           </div>
 

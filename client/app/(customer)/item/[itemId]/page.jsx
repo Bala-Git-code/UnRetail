@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
 import { formatCurrency, formatCondition } from '@/lib/utils';
-import { ShieldCheck, MapPin, Tag, ShoppingBag, ArrowLeft, CheckCircle2, Store, Clock, Zap } from 'lucide-react';
+import { ShieldCheck, MapPin, Tag, ShoppingBag, ArrowLeft, CheckCircle2, Store, Clock, Zap, ZoomIn, Heart, X } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -17,6 +17,35 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [zoomLightboxOpen, setZoomLightboxOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('unretail_saved_grails');
+      if (stored) {
+        try {
+          const ids = JSON.parse(stored);
+          if (Array.isArray(ids) && ids.includes(itemId)) setIsSaved(true);
+        } catch (e) {}
+      }
+    }
+  }, [itemId]);
+
+  const toggleSave = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('unretail_saved_grails');
+      let ids = stored ? JSON.parse(stored) : [];
+      if (ids.includes(itemId)) {
+        ids = ids.filter((id) => id !== itemId);
+        setIsSaved(false);
+      } else {
+        ids.push(itemId);
+        setIsSaved(true);
+      }
+      localStorage.setItem('unretail_saved_grails', JSON.stringify(ids));
+    }
+  };
 
   useEffect(() => {
     fetchItemDetails();
@@ -78,8 +107,8 @@ export default function ProductDetailPage() {
     item?.images && item.images.length > 0
       ? item.images
       : [
-          'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
+          '/images/denim_vintage.png',
+          '/images/leather_jacket.png',
         ];
 
   return (
@@ -97,14 +126,41 @@ export default function ProductDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Left Column: Image Gallery */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="aspect-[4/5] bg-zinc-950 border border-zinc-800 overflow-hidden relative shadow-2xl">
+          <div className="aspect-[4/5] bg-zinc-950 border border-zinc-800 overflow-hidden relative shadow-2xl group">
             <img
-              src={images[selectedImage]}
+              src={images[selectedImage] || '/images/denim_vintage.png'}
               alt={item?.title}
-              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/images/denim_vintage.png';
+              }}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
+              onClick={() => setZoomLightboxOpen(true)}
             />
             <div className="absolute top-4 left-4 bg-neon-lime text-black font-mono font-bold text-xs px-3 py-1">
-              STATUS: {item?.status || 'AVAILABLE'}
+              STATUS: {item?.status === 'SOLD' ? 'SOLD OUT' : 'AVAILABLE IN-STORE & ONLINE'}
+            </div>
+
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <button
+                onClick={toggleSave}
+                className={`p-2 border backdrop-blur-md transition-all ${
+                  isSaved
+                    ? 'bg-rose-500 text-white border-rose-400'
+                    : 'bg-black/70 text-zinc-300 border-zinc-700 hover:text-white hover:border-white'
+                }`}
+                title={isSaved ? 'Saved to Watchlist' : 'Save Grail'}
+              >
+                <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+              </button>
+
+              <button
+                onClick={() => setZoomLightboxOpen(true)}
+                className="bg-black/70 hover:bg-white hover:text-black text-zinc-300 border border-zinc-700 p-2 backdrop-blur-md transition-all"
+                title="Zoom Lightbox"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -119,7 +175,15 @@ export default function ProductDetailPage() {
                     selectedImage === idx ? 'border-neon-lime ring-1 ring-neon-lime' : 'border-zinc-800 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={imgUrl} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                  <img
+                    src={imgUrl || '/images/denim_vintage.png'}
+                    alt={`Thumbnail ${idx}`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/images/denim_vintage.png';
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -255,6 +319,26 @@ export default function ProductDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Zoom Lightbox Modal */}
+      {zoomLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setZoomLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setZoomLightboxOpen(false)}
+            className="absolute top-6 right-6 bg-zinc-900 text-white p-3 border border-zinc-700 hover:border-neon-lime transition-all"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={images[selectedImage] || '/images/denim_vintage.png'}
+            alt={item?.title}
+            className="max-w-full max-h-[90vh] object-contain shadow-2xl border border-zinc-800"
+          />
         </div>
       )}
     </div>

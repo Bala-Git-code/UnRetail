@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import { googleAuth, getMe } from './controllers/auth.controller.js';
+import { googleAuth, getMe, adminLogin } from './controllers/auth.controller.js';
 import { getItems, getItemById, createItem, updateItem, deleteItem } from './controllers/item.controller.js';
 import { createOrder, handleRazorpayWebhook, getCloudinarySignature } from './controllers/payment.controller.js';
 import { getShops, getShopById, createShop, verifyShop } from './controllers/shop.controller.js';
@@ -12,7 +12,7 @@ import { requireRole } from './middlewares/role.middleware.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Global Middlewares
 app.use(cors({ origin: true, credentials: true }));
@@ -29,6 +29,7 @@ const apiRouter = express.Router();
 
 // --- Auth Routes ---
 apiRouter.post('/auth/google', googleAuth);
+apiRouter.post('/auth/admin-login', adminLogin);
 apiRouter.get('/auth/me', authenticateJwt, getMe);
 
 // --- Cloudinary Signature Route ---

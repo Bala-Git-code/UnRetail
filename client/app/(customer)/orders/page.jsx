@@ -16,7 +16,7 @@ export default function CustomerOrdersPage() {
       id: 'ord_90123',
       razorpayOrderId: 'order_Nx823Hdfa89',
       itemTitle: '1990s Vintage Levi 501 Heavyweight Denim',
-      itemImage: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80',
+      itemImage: '/images/denim_vintage.png',
       shopName: 'Relic Vintage Co.',
       shopCity: 'Mumbai',
       amountPaid: 5499,
@@ -27,7 +27,7 @@ export default function CustomerOrdersPage() {
       id: 'ord_88412',
       razorpayOrderId: 'order_Kj9910aBc22',
       itemTitle: 'Distressed Harley Davidson Leather Jacket',
-      itemImage: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80',
+      itemImage: '/images/leather_jacket.png',
       shopName: 'Retro Vault',
       shopCity: 'Bengaluru',
       amountPaid: 12500,
@@ -52,13 +52,13 @@ export default function CustomerOrdersPage() {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'PAID':
-        return <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">PAID & ESCROW HOLD</span>;
+        return <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">Payment Secured in Escrow</span>;
       case 'SHIPPED':
-        return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">IN TRANSIT</span>;
+        return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">In Transit</span>;
       case 'DELIVERED':
-        return <span className="bg-neon-lime/10 text-neon-lime border border-neon-lime/30 px-3 py-1 font-mono text-xs font-bold uppercase">DELIVERED</span>;
+        return <span className="bg-neon-lime/10 text-neon-lime border border-neon-lime/30 px-3 py-1 font-mono text-xs font-bold uppercase">Delivered</span>;
       default:
-        return <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">PENDING</span>;
+        return <span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-3 py-1 font-mono text-xs font-bold uppercase">Processing Order</span>;
     }
   };
 
@@ -123,7 +123,15 @@ export default function CustomerOrdersPage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-24 bg-zinc-950 border border-zinc-800 shrink-0 overflow-hidden">
-                  <img src={order.itemImage} alt={order.itemTitle} className="w-full h-full object-cover" />
+                  <img
+                    src={order.itemImage || '/images/denim_vintage.png'}
+                    alt={order.itemTitle}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/images/denim_vintage.png';
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-base font-bold text-white uppercase tracking-tight">{order.itemTitle}</h3>

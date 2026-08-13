@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Metallic Silver Gradient -->
+    <linearGradient id="silverBase" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="25%" stop-color="#E5E7EB" />
+      <stop offset="50%" stop-color="#9CA3AF" />
+      <stop offset="75%" stop-color="#4B5563" />
+      <stop offset="100%" stop-color="#1F2937" />
+    </linearGradient>
+
+    <!-- Metallic Gloss Highlight -->
+    <linearGradient id="silverGloss" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#D1D5DB" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#6B7280" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Neon Lime Gradient -->
+    <linearGradient id="neonLime" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FACC15" />
+      <stop offset="35%" stop-color="#D9F99D" />
+      <stop offset="65%" stop-color="#A3E635" />
+      <stop offset="100%" stop-color="#65A30D" />
+    </linearGradient>
+
+    <!-- Neon Glow Filter -->
+    <filter id="limeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Drop Shadow for 3D Depth -->
+    <filter id="shadow3d" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow3d)">
+    <!-- Silver Teardrop Loop (Left Outer & Inner) -->
+    <path d="M 62,25 
+             C 98,25 125,50 125,86 
+             C 125,122 98,147 62,147 
+             C 32,147 25,125 25,86 
+             C 25,47 32,25 62,25 Z
+             M 62,50
+             C 45,50 43,65 43,86
+             C 43,107 45,122 62,122
+             C 83,122 100,105 100,86
+             C 100,67 83,50 62,50 Z" 
+          fill="url(#silverBase)" fill-rule="evenodd" />
+
+    <!-- Silver Specular Highlight Overlay -->
+    <path d="M 62,25 C 98,25 125,50 125,86 C 125,122 98,147 62,147 C 32,147 25,125 25,86 C 25,47 32,25 62,25 Z M 62,50 C 45,50 43,65 43,86 C 43,107 45,122 62,122 C 83,122 100,105 100,86 C 100,67 83,50 62,50 Z"
+          fill="url(#silverGloss)" fill-rule="evenodd" opacity="0.5" />
+
+    <!-- Neon Lime Circular Ring (Right Ring - Back & Interlocking Portion) -->
+    <path d="M 145,25 
+             C 181,25 210,54 210,90 
+             C 210,126 181,155 145,155 
+             C 109,155 80,126 80,90 
+             C 80,54 109,25 145,25 Z
+             M 145,50
+             C 123,50 105,68 105,90
+             C 105,112 123,130 145,130
+             C 167,130 185,112 185,90
+             C 185,68 167,50 145,50 Z" 
+          fill="url(#neonLime)" fill-rule="evenodd" filter="url(#limeGlow)" />
+
+    <!-- Interlocking Overlap: Silver Top Arc Overlaps Lime Top Left Arc for 3D Chain Interlock -->
+    <path d="M 85,38 
+             C 98,44 108,55 114,68 
+             C 105,62 95,58 84,56
+             C 77,55 70,55 62,55
+             C 62,50 73,39 85,38 Z"
+          fill="url(#silverBase)" opacity="0.9" />
+  </g>
+</svg>

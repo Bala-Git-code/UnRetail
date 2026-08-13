@@ -7,6 +7,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-plus-jakarta)', 'Inter', 'sans-serif'],
+        heading: ['var(--font-outfit)', 'Plus Jakarta Sans', 'sans-serif'],
+      },
       colors: {
         neon: {
           lime: '#ccff00',

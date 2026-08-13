@@ -25,9 +25,9 @@ export default function NewItemListingPage() {
   const categories = ['Apparel', 'Outerwear', 'Denim', 'Footwear', 'Accessories'];
   const sizes = ['S', 'M', 'L', 'XL', 'W32 L30', 'OS'];
   const conditions = [
-    { value: 'LIKE_NEW', label: 'Like New' },
-    { value: 'GENTLY_USED', label: 'Gently Used' },
-    { value: 'FLAWED', label: 'Flawed' },
+    { value: 'LIKE_NEW', label: 'Pristine / Like New' },
+    { value: 'GENTLY_USED', label: 'Gently Loved' },
+    { value: 'FLAWED', label: 'Vintage Character' },
   ];
 
   // Mobile camera / image upload handler with Cloudinary signature endpoint call
@@ -195,21 +195,21 @@ export default function NewItemListingPage() {
             <span className="text-zinc-500">Fast Demo Photo Presets:</span>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80')}
+              onClick={() => handleAddSampleImage('/images/denim_vintage.png')}
               className="text-zinc-400 hover:text-neon-lime underline"
             >
               + 90s Levi Denim
             </button>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80')}
+              onClick={() => handleAddSampleImage('/images/leather_jacket.png')}
               className="text-zinc-400 hover:text-neon-lime underline"
             >
               + Leather Bomber
             </button>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80')}
+              onClick={() => handleAddSampleImage('/images/graphic_tee.png')}
               className="text-zinc-400 hover:text-neon-lime underline"
             >
               + Vintage Graphic Tee

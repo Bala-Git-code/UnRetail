@@ -33,10 +33,10 @@ export default function MerchantOrdersPage() {
       <div className="pb-6 border-b border-zinc-800 font-mono">
         <span className="text-xs text-neon-lime uppercase tracking-widest block">VENDOR ESCROW & FULFILLMENT</span>
         <h1 className="text-3xl font-black uppercase text-white tracking-tight">
-          Vendor Orders & Payouts
+          Merchant Orders & Payouts
         </h1>
         <p className="text-xs text-zinc-400 mt-1">
-          Razorpay escrow release happens upon customer delivery verification. 10% platform commission cut auto-deducted.
+          Payment funds are released from escrow upon customer delivery verification. 10% platform service fee auto-deducted.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default function MerchantOrdersPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-800 gap-2">
               <div className="font-bold text-white uppercase text-sm">Order #{ord.id}</div>
               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 font-bold uppercase">
-                {ord.status} & ESCROW HELD
+                Payment Secured in Escrow
               </span>
             </div>
 
@@ -68,11 +68,11 @@ export default function MerchantOrdersPage() {
             <div className="bg-zinc-950 border border-zinc-800 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-4">
                 <div>
-                  <span className="text-zinc-500 text-[10px] uppercase block">Platform 10% Cut</span>
+                  <span className="text-zinc-500 text-[10px] uppercase block">Platform Service Fee (10%)</span>
                   <span className="text-rose-400 font-bold">-{formatCurrency(ord.platformCut)}</span>
                 </div>
                 <div className="border-l border-zinc-800 pl-4">
-                  <span className="text-zinc-500 text-[10px] uppercase block">Net Vendor Payout (90%)</span>
+                  <span className="text-zinc-500 text-[10px] uppercase block">Net Merchant Payout (90%)</span>
                   <span className="text-neon-lime font-black text-sm">{formatCurrency(ord.netVendorPayout)}</span>
                 </div>
               </div>

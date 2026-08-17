@@ -2,19 +2,45 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '@/lib/api-client';
-import { Camera, Upload, CheckCircle2, AlertCircle, ArrowLeft, Tag, Layers, Sparkles, X, Info } from 'lucide-react';
+import {
+  TAXONOMY,
+  TECH_CONDITION_GRADES,
+  FOUR_POINT_OPERATIONAL_CHECKLIST,
+  getCategoryById,
+  isTechCategory,
+} from '@/lib/taxonomy';
+import {
+  Camera,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  Tag,
+  Layers,
+  Sparkles,
+  X,
+  Info,
+  ShieldCheck,
+  Cpu,
+  Lock,
+  CheckSquare,
+  Square,
+  HelpCircle,
+  Zap,
+} from 'lucide-react';
 
 export default function NewItemListingPage() {
   const router = useRouter();
 
+  // Basic Form States
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Apparel');
-  const [subcategory, setSubcategory] = useState('');
+  const [subcategory, setSubcategory] = useState('Tops & Graphic Tees');
   const [brand, setBrand] = useState('');
-  const [serialNumber, setSerialNumber] = useState('');
   const [size, setSize] = useState('L');
   const [era, setEra] = useState('90s');
   const [condition, setCondition] = useState('GENTLY_USED');
@@ -23,39 +49,43 @@ export default function NewItemListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [hasShop, setHasShop] = useState(true);
-  const [checkingShop, setCheckingShop] = useState(true);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Tech & Retro Electronics Anti-Fraud Fields
+  const [techConditionGrade, setTechConditionGrade] = useState('Grade A - Mint');
+  const [powerOnStatus, setPowerOnStatus] = useState(true);
+  const [screenSensorClarity, setScreenSensorClarity] = useState(true);
+  const [portChargingTested, setPortChargingTested] = useState(true);
+  const [knownDefectsReported, setKnownDefectsReported] = useState(false);
+  const [knownDefectsDesc, setKnownDefectsDesc] = useState('');
+  const [serialNumberImei, setSerialNumberImei] = useState('');
 
   const eras = ['70s', '80s', '90s', 'Y2K', 'Archival'];
-  const categories = ['Apparel', 'Outerwear', 'Denim', 'Footwear', 'Accessories'];
-  const sizes = ['S', 'M', 'L', 'XL', 'W32 L30', 'OS'];
-  const conditions = [
+  const apparelConditions = [
     { value: 'LIKE_NEW', label: 'Pristine / Like New' },
     { value: 'GENTLY_USED', label: 'Gently Loved' },
     { value: 'FLAWED', label: 'Vintage Character' },
   ];
 
+  // Dynamic update of subcategories when parent category changes
   useEffect(() => {
-    checkShopStatus();
-  }, []);
-
-  const checkShopStatus = async () => {
-    try {
-      const res = await apiClient.get('/merchant/my-shop');
-      if (res.data?.success && res.data?.data) {
-        setHasShop(true);
-      } else {
-        setHasShop(false);
+    const catObj = getCategoryById(category);
+    if (catObj && catObj.subcategories.length > 0) {
+      // Check if current subcategory exists in new parent; if not, pick first
+      const exists = catObj.subcategories.some((s) => s.id === subcategory);
+      if (!exists) {
+        setSubcategory(catObj.subcategories[0].id);
       }
-    } catch (err) {
-      console.warn('Failed to verify shop status:', err);
-      setHasShop(false);
-    } finally {
-      setCheckingShop(false);
+      if (catObj.sizeOptions && !catObj.sizeOptions.includes(size)) {
+        setSize(catObj.sizeOptions[0]);
+      }
     }
-  };
+  }, [category]);
 
-  // Mobile camera / image upload handler
+  const isTech = isTechCategory(category);
+  const currentCategoryObj = getCategoryById(category) || TAXONOMY[0];
+
+  // Image Upload Handler
   const handleImageUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -95,42 +125,103 @@ export default function NewItemListingPage() {
     }
   };
 
-  const handleAddSampleImage = (url) => {
-    setImages((prev) => [...prev, url]);
+  const handleAddSamplePreset = (preset) => {
+    setTitle(preset.title);
+    setDescription(preset.description);
+    setPrice(preset.price.toString());
+    setCategory(preset.category);
+    setSubcategory(preset.subcategory);
+    setSize(preset.size);
+    setEra(preset.era);
+    setCondition(preset.condition || 'LIKE_NEW');
+    setImages(preset.images);
+    if (preset.techConditionGrade) {
+      setTechConditionGrade(preset.techConditionGrade);
+      setPowerOnStatus(preset.powerOnStatus ?? true);
+      setScreenSensorClarity(preset.screenSensorClarity ?? true);
+      setPortChargingTested(preset.portChargingTested ?? true);
+      setKnownDefectsReported(preset.knownDefectsReported ?? false);
+      setKnownDefectsDesc(preset.knownDefectsDesc || '');
+      setSerialNumberImei(preset.serialNumberImei || '');
+    }
+    setValidationErrors({});
   };
 
   const handleRemoveImage = (idx) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // Form Validation & Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !price) {
-      setErrorMsg('Please enter item title and price');
+    const errors = {};
+
+    if (!title.trim()) errors.title = 'Item title is required';
+    if (!price || parseFloat(price) <= 0) errors.price = 'Please enter a valid price in INR';
+    if (!category) errors.category = 'Category selection is required';
+    if (!subcategory) errors.subcategory = 'Subcategory selection is required';
+
+    // Anti-Fraud Checks for Tech & Retro Electronics
+    if (isTech) {
+      if (!techConditionGrade) {
+        errors.techConditionGrade = 'Standardized functional condition grade is required for tech';
+      }
+      if (!serialNumberImei || serialNumberImei.trim() === '') {
+        errors.serialNumberImei = 'Serial Number / IMEI is required for escrow dispute protection';
+      }
+      if (!powerOnStatus) {
+        errors.powerOnStatus = 'Please confirm power-on diagnostic status';
+      }
+      if (!screenSensorClarity) {
+        errors.screenSensorClarity = 'Please confirm screen/sensor/lens clarity';
+      }
+      if (!portChargingTested) {
+        errors.portChargingTested = 'Please confirm port/charging circuit verification';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setErrorMsg('Please review and resolve the highlighted fields before listing.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    setSubmitting(true);
+    setValidationErrors({});
     setErrorMsg(null);
+    setSubmitting(true);
 
     try {
       const payload = {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         price: parseFloat(price),
         category,
-        subcategory: subcategory || undefined,
+        subcategory,
         brand: brand || undefined,
-        serialNumber: serialNumber || undefined,
         size,
         era,
-        condition,
-        images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80'],
+        condition: isTech ? 'LIKE_NEW' : condition,
+        images: images.length > 0 ? images : ['/images/denim_vintage.png'],
+        // Tech Anti-Fraud verification payload
+        ...(isTech && {
+          techConditionGrade,
+          powerOnStatus,
+          screenSensorClarity,
+          portChargingTested,
+          knownDefectsReported,
+          knownDefectsDesc: knownDefectsDesc.trim(),
+          serialNumberImei: serialNumberImei.trim(),
+        }),
       };
 
       const res = await apiClient.post('/items', payload);
       if (res.data?.success) {
-        setSuccessMsg('Item successfully listed on live feed and search index!');
+        setSuccessMsg(
+          isTech
+            ? 'Tech Grail verified with Escrow Anti-Fraud lock & published to live feed!'
+            : 'Rack item successfully listed on live feed and search index!'
+        );
         setTimeout(() => {
           router.push('/dashboard/listings');
         }, 1200);
@@ -150,45 +241,67 @@ export default function NewItemListingPage() {
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon-lime/10 border border-neon-lime/20 rounded-full text-xs font-medium text-neon-lime">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Mobile Camera 60-Sec Flow</span>
+            <span>Merchant Snap & Sell Desk</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            New Rack Item Listing
+            New Boutique Rack Listing
           </h1>
+          <p className="text-xs text-zinc-400">
+            Publish vintage fashion or vintage electronics with escrow protection and real-time storefront sync.
+          </p>
         </div>
         <button
           onClick={() => router.back()}
-          className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2 transition-colors font-medium"
+          className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 rounded-xl px-3.5 py-2 transition-colors font-medium hover:border-zinc-700"
         >
           <ArrowLeft className="w-4 h-4 text-neon-lime" /> Cancel
         </button>
       </div>
 
-      {errorMsg && (
-        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
+      {/* Error and Success Banners */}
+      <AnimatePresence>
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-xl text-xs flex items-center gap-3 shadow-lg"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="font-medium">{errorMsg}</span>
+          </motion.div>
+        )}
 
-      {successMsg && (
-        <div className="bg-neon-lime/10 border border-neon-lime/30 text-neon-lime p-4 rounded-xl text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="bg-neon-lime/10 border border-neon-lime/30 text-neon-lime p-4 rounded-xl text-xs flex items-center gap-3 shadow-lg"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="font-semibold">{successMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleSubmit} className="space-y-6 text-xs">
-        {/* Photo Upload Box (Camera / File) */}
+        {/* Section 1: Photo Upload Box */}
         <div className="space-y-3 bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
-          <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
-            1. Rack Photos (Mobile Camera / Upload)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+              1. Rack Photos (Mobile Camera / Upload) *
+            </label>
+            <span className="text-[11px] text-zinc-500 font-medium">Multiple angles recommended</span>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {/* Active Photos */}
+            {/* Uploaded Photos */}
             {images.map((imgUrl, idx) => (
-              <div key={idx} className="relative aspect-square bg-zinc-950 border border-zinc-700/80 rounded-xl overflow-hidden group shadow-md">
+              <div
+                key={idx}
+                className="relative aspect-square bg-zinc-950 border border-zinc-700/80 rounded-xl overflow-hidden group shadow-md"
+              >
                 <img src={imgUrl} alt="Listing" className="w-full h-full object-cover" />
                 <button
                   type="button"
@@ -200,7 +313,7 @@ export default function NewItemListingPage() {
               </div>
             ))}
 
-            {/* Camera Input Button */}
+            {/* Camera Input Trigger */}
             <label className="aspect-square bg-zinc-900/60 border-2 border-dashed border-zinc-700 hover:border-neon-lime rounded-xl flex flex-col items-center justify-center p-4 text-center cursor-pointer group transition-all">
               <Camera className="w-6 h-6 text-zinc-400 group-hover:text-neon-lime mb-2 transition-colors" />
               <span className="text-[11px] text-zinc-300 font-medium group-hover:text-white">
@@ -217,49 +330,391 @@ export default function NewItemListingPage() {
             </label>
           </div>
 
-          <div className="pt-2 flex flex-wrap gap-2 text-xs">
-            <span className="text-zinc-500 font-medium">Sample Presets:</span>
+          {/* Quick-Fill Sample Presets */}
+          <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-zinc-500 font-medium">Quick Fill Presets:</span>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('/images/denim_vintage.png')}
-              className="text-zinc-400 hover:text-neon-lime underline font-medium"
+              onClick={() =>
+                handleAddSamplePreset({
+                  title: '1990s Vintage Levi 501 Heavyweight Denim',
+                  description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Made in USA with 14oz rigid denim.',
+                  price: 5499,
+                  category: 'Apparel',
+                  subcategory: 'Denim & Bottoms',
+                  size: 'W32 L30',
+                  era: '90s',
+                  condition: 'LIKE_NEW',
+                  images: ['/images/denim_vintage.png'],
+                })
+              }
+              className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-neon-lime hover:border-zinc-600 transition-all"
             >
-              + 90s Levi Denim
+              + 90s Levi 501
             </button>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('/images/leather_jacket.png')}
-              className="text-zinc-400 hover:text-neon-lime underline font-medium"
+              onClick={() =>
+                handleAddSamplePreset({
+                  title: 'Distressed Harley Davidson Leather Bomber Jacket',
+                  description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece.',
+                  price: 12500,
+                  category: 'Apparel',
+                  subcategory: 'Outerwear & Jackets',
+                  size: 'L',
+                  era: '80s',
+                  condition: 'GENTLY_USED',
+                  images: ['/images/leather_jacket.png'],
+                })
+              }
+              className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-neon-lime hover:border-zinc-600 transition-all"
             >
-              + Leather Bomber
+              + Harley Bomber
             </button>
             <button
               type="button"
-              onClick={() => handleAddSampleImage('/images/graphic_tee.png')}
-              className="text-zinc-400 hover:text-neon-lime underline font-medium"
+              onClick={() =>
+                handleAddSamplePreset({
+                  title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
+                  description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger.',
+                  price: 9400,
+                  category: 'Tech & Retro Electronics',
+                  subcategory: 'Digicams & 35mm Film',
+                  size: 'Pocket',
+                  era: 'Y2K',
+                  techConditionGrade: 'Grade A - Mint',
+                  powerOnStatus: true,
+                  screenSensorClarity: true,
+                  portChargingTested: true,
+                  knownDefectsReported: false,
+                  knownDefectsDesc: 'Pristine sensor and optics with zero dead pixels.',
+                  serialNumberImei: 'DSCP100-SN-894210',
+                  images: ['/images/vintage_camera.png'],
+                })
+              }
+              className="px-2.5 py-1 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-300 hover:text-white hover:border-cyan-400 transition-all"
             >
-              + Vintage Graphic Tee
+              + Sony Digicam (Tech)
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                handleAddSamplePreset({
+                  title: 'Nintendo Game Boy Color - Atomic Purple Edition',
+                  description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
+                  price: 7800,
+                  category: 'Tech & Retro Electronics',
+                  subcategory: 'Gaming Handhelds',
+                  size: 'Handheld',
+                  era: '90s',
+                  techConditionGrade: 'Grade A - Mint',
+                  powerOnStatus: true,
+                  screenSensorClarity: true,
+                  portChargingTested: true,
+                  knownDefectsReported: false,
+                  knownDefectsDesc: 'Flawless sound output, clean battery contacts with zero corrosion.',
+                  serialNumberImei: 'GBC-AP-540921',
+                  images: ['/images/retro_gaming.png'],
+                })
+              }
+              className="px-2.5 py-1 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-300 hover:text-white hover:border-cyan-400 transition-all"
+            >
+              + Game Boy Color (Tech)
             </button>
           </div>
         </div>
 
-        {/* Item Title & Price */}
+        {/* Section 2: Multi-Tier Category & Subcategory Selector */}
+        <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 space-y-6 shadow-xl backdrop-blur-sm">
+          {/* Main Parent Category */}
+          <div className="space-y-2">
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs flex items-center justify-between">
+              <span>2. Parent Category *</span>
+              <span className="text-[11px] text-neon-lime font-mono">Taxonomy Tier 1</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {TAXONOMY.map((cat) => {
+                const isSelected = category === cat.id;
+                return (
+                  <button
+                    type="button"
+                    key={cat.id}
+                    onClick={() => setCategory(cat.id)}
+                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-neon-lime/10 border-neon-lime text-white shadow-[0_0_16px_rgba(204,255,0,0.15)]'
+                        : 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-bold text-sm ${isSelected ? 'text-neon-lime' : 'text-white'}`}>
+                          {cat.name}
+                        </span>
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-neon-lime shrink-0" />}
+                      </div>
+                      <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
+                        {cat.description}
+                      </p>
+                    </div>
+                    {cat.id === 'Tech & Retro Electronics' && (
+                      <div className="mt-2 inline-flex items-center gap-1 text-[10px] text-cyan-400 font-mono">
+                        <ShieldCheck className="w-3 h-3" /> Anti-Fraud Verification
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Nested Subcategory Selector */}
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs flex items-center justify-between">
+              <span>3. Nested Subcategory *</span>
+              <span className="text-[11px] text-zinc-500 font-mono">Dynamic Sub-Pills</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {currentCategoryObj.subcategories.map((sub) => {
+                const isSubSelected = subcategory === sub.id;
+                return (
+                  <button
+                    type="button"
+                    key={sub.id}
+                    onClick={() => setSubcategory(sub.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isSubSelected
+                        ? 'bg-neon-lime text-black font-bold shadow-md shadow-neon-lime/20 scale-[1.02]'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                    }`}
+                  >
+                    {sub.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Conditional Tech & Retro Electronics Anti-Fraud Verification Desk */}
+        <AnimatePresence>
+          {isTech && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="bg-gradient-to-b from-cyan-950/30 via-zinc-950/80 to-zinc-950 border-2 border-cyan-500/40 rounded-2xl p-6 space-y-6 shadow-2xl backdrop-blur-md relative">
+                {/* Anti-Fraud Banner Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-cyan-500/20">
+                  <div className="flex items-center gap-2.5 text-cyan-300">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center">
+                      <Cpu className="w-4 h-4 text-cyan-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        Hardware Verification & Escrow Anti-Fraud Desk
+                      </h3>
+                      <p className="text-[11px] text-cyan-400/90">
+                        Mandatory condition grading and hardware telemetry to protect against returns fraud.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-[11px] font-mono text-cyan-300">
+                    <Lock className="w-3 h-3 text-cyan-400" />
+                    <span>Dispute Protection Active</span>
+                  </div>
+                </div>
+
+                {/* 1. Functional Condition Grade Selector */}
+                <div className="space-y-2">
+                  <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+                    A. Functional Condition Grade *
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {TECH_CONDITION_GRADES.map((grade) => {
+                      const isGradeSelected = techConditionGrade === grade.value;
+                      return (
+                        <button
+                          type="button"
+                          key={grade.value}
+                          onClick={() => setTechConditionGrade(grade.value)}
+                          className={`p-3.5 rounded-xl border text-left transition-all ${
+                            isGradeSelected
+                              ? 'bg-zinc-900 border-cyan-400 text-white shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                              : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`font-bold text-xs ${grade.badgeClass} px-2.5 py-0.5 rounded-full border`}>
+                              {grade.label}
+                            </span>
+                            {isGradeSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </div>
+                          <p className="text-[11px] text-zinc-400 leading-relaxed mt-1.5">
+                            {grade.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. 4-Point Operational Checklist */}
+                <div className="space-y-3">
+                  <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs flex items-center justify-between">
+                    <span>B. 4-Point Operational Checklist *</span>
+                    <span className="text-[11px] text-cyan-400 font-mono">Verify All Checkpoints</span>
+                  </label>
+
+                  <div className="space-y-2 bg-zinc-950/70 border border-zinc-800 rounded-xl p-4">
+                    {/* Item 1 */}
+                    <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-zinc-900/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={powerOnStatus}
+                        onChange={(e) => setPowerOnStatus(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-cyan-400 rounded"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-white text-xs">
+                          1. Power-On & Boot Cycle Verification
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          Unit powers on, initializes firmware/shutter mechanism, and stays running without shutdowns.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Item 2 */}
+                    <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-zinc-900/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={screenSensorClarity}
+                        onChange={(e) => setScreenSensorClarity(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-cyan-400 rounded"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-white text-xs">
+                          2. Screen, Sensor & Optical Clarity Inspection
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          LCD display, CCD/CMOS sensor, and optical elements free from severe fungus, haze, or dead pixel lines.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Item 3 */}
+                    <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-zinc-900/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={portChargingTested}
+                        onChange={(e) => setPortChargingTested(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-cyan-400 rounded"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-white text-xs">
+                          3. Port, Battery & Charging Circuit Test
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          Data transfer ports, audio output jacks, and battery charging pins hold connection and charge.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Item 4: Defects / Flaws */}
+                    <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-zinc-900/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={knownDefectsReported}
+                        onChange={(e) => setKnownDefectsReported(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-amber-400 rounded"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-amber-300 text-xs">
+                          4. Flaws / Patina Disclosed (Check if device has any known cosmetic scuffs or defects)
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          Enables transparent listing and shields merchant during escrow inspection.
+                        </p>
+                      </div>
+                    </label>
+
+                    {knownDefectsReported && (
+                      <div className="pt-2 pl-7">
+                        <textarea
+                          rows={2}
+                          value={knownDefectsDesc}
+                          onChange={(e) => setKnownDefectsDesc(e.target.value)}
+                          placeholder="Detail any battery cover looseness, light cosmetic scratches, or missing peripheral caps..."
+                          className="w-full bg-zinc-900 border border-amber-500/30 rounded-xl text-white p-3 text-xs focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Serial Number / IMEI (Private) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>C. Serial Number / IMEI (Stored Encrypted) *</span>
+                    </label>
+                    <span className="text-[11px] text-cyan-400 font-mono">Escrow dispute protection</span>
+                  </div>
+
+                  <input
+                    type="text"
+                    required={isTech}
+                    value={serialNumberImei}
+                    onChange={(e) => setSerialNumberImei(e.target.value)}
+                    placeholder="e.g. DSCP100-SN-894210 or GBC-AP-540921"
+                    className={`w-full bg-zinc-950 border rounded-xl text-white p-3.5 text-sm font-mono focus:outline-none transition-colors ${
+                      validationErrors.serialNumberImei
+                        ? 'border-rose-500 focus:border-rose-500'
+                        : 'border-zinc-800 focus:border-cyan-400'
+                    }`}
+                  />
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    This serial number will <strong>never be shown publicly</strong> to casual browsers. It is securely logged in the escrow ledger to prevent swap-and-return fraud during customer claims.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Section 4: Title, Price & Details */}
         <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-1.5">
-              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">2. Item Title *</label>
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+                4. Item Title *
+              </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. 1990s Vintage Levi 501 Heavyweight Denim"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+                className={`w-full bg-zinc-950 border rounded-xl text-white p-3.5 text-sm focus:outline-none transition-colors ${
+                  validationErrors.title
+                    ? 'border-rose-500 focus:border-rose-500'
+                    : 'border-zinc-800 focus:border-neon-lime'
+                }`}
               />
+              {validationErrors.title && (
+                <span className="text-rose-400 text-[11px] block">{validationErrors.title}</span>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">3. Price (INR) *</label>
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+                5. Price (INR) *
+              </label>
               <input
                 type="number"
                 required
@@ -267,8 +722,15 @@ export default function NewItemListingPage() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="e.g. 5499"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm tabular-nums focus:outline-none focus:border-neon-lime transition-colors"
+                className={`w-full bg-zinc-950 border rounded-xl text-white p-3.5 text-sm tabular-nums focus:outline-none transition-colors ${
+                  validationErrors.price
+                    ? 'border-rose-500 focus:border-rose-500'
+                    : 'border-zinc-800 focus:border-neon-lime'
+                }`}
               />
+              {validationErrors.price && (
+                <span className="text-rose-400 text-[11px] block">{validationErrors.price}</span>
+              )}
             </div>
           </div>
 
@@ -310,22 +772,26 @@ export default function NewItemListingPage() {
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">4. Item Details & Notes</label>
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+              6. Detailed Description & Curator Notes
+            </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe wash patina, distressing details, or fit specifications..."
+              placeholder="Describe wash patina, distressing details, accessories included, or fit specifications..."
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
             />
           </div>
         </div>
 
-        {/* Pill Selectors */}
+        {/* Section 5: Era, Size & General Condition (For Apparel/Accessories) */}
         <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 space-y-6 shadow-xl backdrop-blur-sm">
           {/* Era */}
           <div className="space-y-2">
-            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">5. Vintage Era</label>
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+              7. Vintage Era / Decade
+            </label>
             <div className="flex flex-wrap gap-2">
               {eras.map((itemEra) => (
                 <button
@@ -344,72 +810,56 @@ export default function NewItemListingPage() {
             </div>
           </div>
 
-          {/* Condition */}
+          {/* Sizing Tag */}
           <div className="space-y-2">
-            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">6. Condition Tag</label>
+            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+              8. Size Tag / Specification
+            </label>
             <div className="flex flex-wrap gap-2">
-              {conditions.map((c) => (
+              {(currentCategoryObj.sizeOptions || ['S', 'M', 'L', 'XL', 'OS']).map((s) => (
                 <button
                   type="button"
-                  key={c.value}
-                  onClick={() => setCondition(c.value)}
-                  className={`px-4 py-2 rounded-full font-semibold transition-all ${
-                    condition === c.value
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+                    size === s
                       ? 'bg-neon-lime text-black shadow-sm font-bold'
                       : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
                   }`}
                 >
-                  {c.label}
+                  {s}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Category & Size */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">7. Category</label>
+          {/* General Apparel Condition (Hidden if Tech is active since Tech has dedicated grading) */}
+          {!isTech && (
+            <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+                9. Apparel Condition Grade
+              </label>
               <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
+                {apparelConditions.map((c) => (
                   <button
                     type="button"
-                    key={cat}
-                    onClick={() => setCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                      category === cat
+                    key={c.value}
+                    onClick={() => setCondition(c.value)}
+                    className={`px-4 py-2 rounded-full font-semibold transition-all ${
+                      condition === c.value
                         ? 'bg-neon-lime text-black shadow-sm font-bold'
                         : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
                     }`}
                   >
-                    {cat}
+                    {c.label}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">8. Size Tag</label>
-              <div className="flex flex-wrap gap-2">
-                {sizes.map((s) => (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => setSize(s)}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                      size === s
-                        ? 'bg-neon-lime text-black shadow-sm font-bold'
-                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Instant Publish Action */}
+        {/* Section 6: Instant Publish Action */}
         <div className="pt-2">
           <button
             type="submit"
@@ -417,7 +867,13 @@ export default function NewItemListingPage() {
             className="w-full bg-neon-lime hover:bg-white text-black font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_24px_rgba(204,255,0,0.3)] active:scale-[0.98] disabled:opacity-50"
           >
             <Sparkles className="w-5 h-5 fill-black" />
-            <span>{submitting ? 'Publishing To Live Feed...' : 'Publish Item to Live Rack Catalog'}</span>
+            <span>
+              {submitting
+                ? 'Validating & Publishing...'
+                : isTech
+                ? 'Verify & Publish Tech Grail to Live Feed'
+                : 'Publish Item to Live Rack Catalog'}
+            </span>
           </button>
         </div>
       </form>

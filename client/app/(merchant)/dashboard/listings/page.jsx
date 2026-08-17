@@ -2,9 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import apiClient from '@/lib/api-client';
-import { formatCurrency, formatCondition } from '@/lib/utils';
-import { PlusCircle, Layers, CheckCircle2, Tag, ShoppingBag, RefreshCw, Sparkles, Zap, Trash2, Edit3 } from 'lucide-react';
+import { formatCurrency, formatCondition, maskSerialNumber } from '@/lib/utils';
+import { isTechCategory } from '@/lib/taxonomy';
+import {
+  PlusCircle,
+  Layers,
+  CheckCircle2,
+  Tag,
+  ShoppingBag,
+  RefreshCw,
+  Sparkles,
+  Zap,
+  Trash2,
+  Edit3,
+  Cpu,
+  Lock,
+  ShieldCheck,
+} from 'lucide-react';
 
 export default function MerchantListingsPage() {
   const [items, setItems] = useState([]);
@@ -50,7 +66,6 @@ export default function MerchantListingsPage() {
       }
     } catch (err) {
       console.warn('Status update fallback:', err);
-      // Optimistic update locally
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i))
       );
@@ -59,39 +74,7 @@ export default function MerchantListingsPage() {
     }
   };
 
-  const fallbackMerchantItems = [
-    {
-      id: 'item-101',
-      title: '1990s Vintage Levi 501 Heavyweight Denim',
-      price: 5499,
-      size: 'W32 L30',
-      era: '90s',
-      status: 'AVAILABLE',
-      images: ['/images/denim_vintage.png'],
-    },
-    {
-      id: 'item-102',
-      title: 'Distressed Harley Davidson Leather Jacket',
-      price: 12500,
-      size: 'L',
-      era: '80s',
-      status: 'AVAILABLE',
-      images: ['/images/leather_jacket.png'],
-    },
-    {
-      id: 'item-103',
-      title: 'Y2K Stussy Graphic Heavyweight Tee',
-      price: 2800,
-      size: 'XL',
-      era: 'Y2K',
-      status: 'SOLD',
-      images: ['/images/graphic_tee.png'],
-    },
-  ];
-
-  const activeItems = items.length > 0 ? items : fallbackMerchantItems;
-
-  const filteredItems = activeItems.filter((i) => {
+  const filteredItems = items.filter((i) => {
     if (statusFilter === 'ALL') return true;
     return i.status === statusFilter;
   });
@@ -160,6 +143,7 @@ export default function MerchantListingsPage() {
               const img = item.images?.[0] || '/images/denim_vintage.png';
               const isSold = item.status === 'SOLD' || item.status === 'SOLD_OFFLINE';
               const isSoldOnline = item.status === 'SOLD';
+              const isTech = isTechCategory(item.category);
 
               return (
                 <div
@@ -185,7 +169,7 @@ export default function MerchantListingsPage() {
                     </div>
  
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
                             isSold
@@ -195,7 +179,24 @@ export default function MerchantListingsPage() {
                         >
                           {item.status}
                         </span>
-                        <span className="text-xs text-zinc-400">Size: <strong className="text-zinc-300">{item.size || 'OS'}</strong> • Era: <strong className="text-zinc-300">{item.era || '90s'}</strong></span>
+
+                        {isTech && item.techConditionGrade && (
+                          <span className="bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            <Cpu className="w-3 h-3" /> {item.techConditionGrade}
+                          </span>
+                        )}
+
+                        <span className="text-xs text-zinc-400">
+                          {item.category}
+                          {item.subcategory && ` • ${item.subcategory}`} • Era: <strong className="text-zinc-300">{item.era || '90s'}</strong>
+                        </span>
+
+                        {isTech && item.serialNumberImei && (
+                          <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-cyan-400" />
+                            {maskSerialNumber(item.serialNumberImei)}
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-sm font-semibold text-white tracking-tight line-clamp-1">{item.title}</h3>
                       <div className="text-base font-bold text-white tabular-nums">{formatCurrency(item.price)}</div>

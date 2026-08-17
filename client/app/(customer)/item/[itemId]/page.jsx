@@ -3,22 +3,153 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '@/lib/api-client';
-import { formatCurrency, formatCondition } from '@/lib/utils';
-import { ShieldCheck, MapPin, Tag, ShoppingBag, ArrowLeft, CheckCircle2, Store, Clock, Zap, ZoomIn, Heart, X, Sparkles } from 'lucide-react';
+import { formatCurrency, formatCondition, maskSerialNumber } from '@/lib/utils';
+import { isTechCategory } from '@/lib/taxonomy';
+import {
+  ShieldCheck,
+  MapPin,
+  Tag,
+  ShoppingBag,
+  ArrowLeft,
+  CheckCircle2,
+  Store,
+  Clock,
+  Zap,
+  ZoomIn,
+  Heart,
+  X,
+  Sparkles,
+  Cpu,
+  Lock,
+  FileCheck,
+} from 'lucide-react';
 
-export default function ProductDetailPage() {
-  const params = useParams();
+const FALLBACK_ITEMS_MAP = {
+  'item-101': {
+    id: 'item-101',
+    title: '1990s Vintage Levi 501 Heavyweight Denim',
+    description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Heavyweight 14oz rigid denim. Made in USA classic straight fit with original copper rivets.',
+    price: 5499,
+    category: 'Apparel',
+    subcategory: 'Denim & Bottoms',
+    size: 'W32 L30',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['/images/denim_vintage.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
+  },
+  'item-102': {
+    id: 'item-102',
+    title: 'Distressed Harley Davidson Leather Bomber Jacket',
+    description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece with heavyweight brass hardware.',
+    price: 12500,
+    category: 'Apparel',
+    subcategory: 'Outerwear & Jackets',
+    size: 'L',
+    era: '80s',
+    condition: 'GENTLY_USED',
+    images: ['/images/leather_jacket.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-2', shopName: 'Retro Vault', city: 'Bengaluru', isVerified: true, address: '108 Indiranagar, 100ft Road' },
+  },
+  'item-103': {
+    id: 'item-103',
+    title: 'Y2K Stussy Graphic Heavyweight Tee',
+    description: 'Single stitch faded black graphic tee. Pre-shrunk vintage cotton drop with archival graphic and ribbed collar.',
+    price: 2800,
+    category: 'Apparel',
+    subcategory: 'Tops & Graphic Tees',
+    size: 'XL',
+    era: 'Y2K',
+    condition: 'LIKE_NEW',
+    images: ['/images/graphic_tee.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', city: 'Delhi', isVerified: false, address: '15 Hauz Khas Village' },
+  },
+  'item-104': {
+    id: 'item-104',
+    title: 'Archival Japanese-Release High-Tops',
+    description: 'Rare 90s Japanese boutique high-top silhouette in collector-grade condition with original laces and vintage box.',
+    price: 8900,
+    category: 'Accessories',
+    subcategory: 'Footwear & Sneakers',
+    size: 'US 10',
+    era: '90s',
+    condition: 'GENTLY_USED',
+    images: ['/images/archival_sneakers.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
+  },
+  'item-105': {
+    id: 'item-105',
+    title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
+    description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger. Verified in-store.',
+    price: 9400,
+    category: 'Tech & Retro Electronics',
+    subcategory: 'Digicams & 35mm Film',
+    size: 'Pocket',
+    era: 'Y2K',
+    techConditionGrade: 'Grade A - Mint',
+    powerOnStatus: true,
+    screenSensorClarity: true,
+    portChargingTested: true,
+    knownDefectsReported: false,
+    knownDefectsDesc: 'Pristine sensor and optics with zero dead pixels.',
+    serialNumberImei: 'DSCP100-SN-894210',
+    images: ['/images/vintage_camera.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
+  },
+  'item-106': {
+    id: 'item-106',
+    title: 'Nintendo Game Boy Color - Atomic Purple Edition',
+    description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
+    price: 7800,
+    category: 'Tech & Retro Electronics',
+    subcategory: 'Gaming Handhelds',
+    size: 'Handheld',
+    era: '90s',
+    techConditionGrade: 'Grade A - Mint',
+    powerOnStatus: true,
+    screenSensorClarity: true,
+    portChargingTested: true,
+    knownDefectsReported: false,
+    knownDefectsDesc: 'Flawless sound output, clean battery contacts with zero corrosion.',
+    serialNumberImei: 'GBC-AP-540921',
+    images: ['/images/retro_gaming.png'],
+    status: 'AVAILABLE',
+    shop: { id: 'shop-2', shopName: 'Retro Vault', city: 'Bengaluru', isVerified: true, address: '108 Indiranagar, 100ft Road' },
+  },
+};
+
+export default function ProductDetailPage(props) {
+  const routeParams = useParams();
   const router = useRouter();
-  const itemId = params?.itemId || 'item-101';
 
-  const [item, setItem] = useState(null);
+  let resolvedId = 'item-101';
+  if (routeParams?.itemId) {
+    resolvedId = routeParams.itemId;
+  } else if (props?.params?.itemId) {
+    resolvedId = props.params.itemId;
+  }
+
+  const [itemId, setItemId] = useState(resolvedId);
+  const [item, setItem] = useState(FALLBACK_ITEMS_MAP[resolvedId] || FALLBACK_ITEMS_MAP['item-101']);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [zoomLightboxOpen, setZoomLightboxOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (routeParams?.itemId) {
+      setItemId(routeParams.itemId);
+    }
+  }, [routeParams?.itemId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,16 +183,17 @@ export default function ProductDetailPage() {
   }, [itemId]);
 
   const fetchItemDetails = async () => {
-    setLoading(true);
     try {
       const res = await apiClient.get(`/items/${itemId}`);
       if (res.data?.data) {
         setItem(res.data.data);
+      } else if (FALLBACK_ITEMS_MAP[itemId]) {
+        setItem(FALLBACK_ITEMS_MAP[itemId]);
       }
     } catch (err) {
-      console.warn('Item details fetch error:', err);
-    } finally {
-      setLoading(false);
+      if (FALLBACK_ITEMS_MAP[itemId]) {
+        setItem(FALLBACK_ITEMS_MAP[itemId]);
+      }
     }
   };
 
@@ -109,21 +241,39 @@ export default function ProductDetailPage() {
   const images =
     item?.images && item.images.length > 0
       ? item.images
-      : [
-          '/images/denim_vintage.png',
-          '/images/leather_jacket.png',
-        ];
+      : ['/images/denim_vintage.png', '/images/leather_jacket.png'];
+
+  const isTech = isTechCategory(item?.category);
 
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 p-4 md:p-8 max-w-7xl mx-auto font-sans">
-      {/* Back Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2"
-        >
-          <ArrowLeft className="w-4 h-4 text-neon-lime" /> Back to Catalog
-        </button>
+      {/* Top Breadcrumb Bar */}
+      <div className="flex items-center justify-between mb-6 pb-2">
+        <div className="flex items-center gap-2 text-xs text-zinc-400">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 font-semibold text-zinc-400 hover:text-white transition-colors bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-1.5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-neon-lime" /> Back
+          </button>
+          <span>/</span>
+          <Link href="/feed" className="hover:text-neon-lime transition-colors">
+            Catalog Feed
+          </Link>
+          <span>/</span>
+          <Link
+            href={`/feed`}
+            className="hover:text-neon-lime transition-colors font-medium text-zinc-300"
+          >
+            {item?.category || 'Apparel'}
+          </Link>
+          {item?.subcategory && (
+            <>
+              <span>/</span>
+              <span className="text-neon-lime font-medium">{item.subcategory}</span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -140,8 +290,15 @@ export default function ProductDetailPage() {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
               onClick={() => setZoomLightboxOpen(true)}
             />
-            <div className="absolute top-4 left-4 bg-neon-lime text-black font-bold text-xs px-3 py-1 rounded-full shadow-md">
-              {item?.status === 'SOLD' ? 'Sold Out' : 'Available In-Store & Online'}
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
+              <span className="bg-neon-lime text-black font-bold text-xs px-3 py-1 rounded-full shadow-md">
+                {item?.status === 'SOLD' ? 'Sold Out' : 'Available In-Store & Online'}
+              </span>
+              {isTech && (
+                <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold text-xs px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-1 shadow-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Escrow Anti-Fraud Lock
+                </span>
+              )}
             </div>
 
             <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -213,11 +370,19 @@ export default function ProductDetailPage() {
           {/* Attribute Specs Grid */}
           <div className="grid grid-cols-2 gap-3 bg-street-card/80 border border-zinc-800/90 rounded-2xl p-5 text-xs shadow-lg backdrop-blur-sm">
             <div>
-              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">Condition</span>
-              <span className="font-semibold text-emerald-400 text-sm">{formatCondition(item?.condition)}</span>
+              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">
+                {isTech ? 'Tech Grade' : 'Condition'}
+              </span>
+              <span className="font-semibold text-emerald-400 text-sm">
+                {isTech && item?.techConditionGrade
+                  ? item.techConditionGrade
+                  : formatCondition(item?.condition)}
+              </span>
             </div>
             <div>
-              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">Size Tag</span>
+              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">
+                {isTech ? 'Form Factor' : 'Size Tag'}
+              </span>
               <span className="font-semibold text-white text-sm">{item?.size || 'OS'}</span>
             </div>
             <div>
@@ -225,10 +390,52 @@ export default function ProductDetailPage() {
               <span className="font-semibold text-white text-sm">{item?.category || 'Apparel'}</span>
             </div>
             <div>
-              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">Era / Origin</span>
-              <span className="font-semibold text-amber-300 text-sm">{item?.era || '90s'}</span>
+              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">Subcategory</span>
+              <span className="font-semibold text-amber-300 text-sm">{item?.subcategory || 'Vintage Core'}</span>
             </div>
           </div>
+
+          {/* Dedicated Tech Anti-Fraud & Hardware Verification Report */}
+          {isTech && (
+            <div className="bg-gradient-to-b from-cyan-950/40 via-zinc-950/80 to-zinc-950 border border-cyan-500/30 rounded-2xl p-5 space-y-3.5 shadow-xl text-xs backdrop-blur-sm">
+              <div className="flex items-center justify-between pb-2 border-b border-cyan-500/20">
+                <div className="font-bold text-white flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-cyan-400" />
+                  <span>Hardware Telemetry & Anti-Fraud Report</span>
+                </div>
+                <span className="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                  Verified In-Store
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-zinc-200">Power-On Verified</span>
+                </div>
+                <div className="flex items-center gap-2 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-zinc-200">Screen / Lens Clear</span>
+                </div>
+                <div className="flex items-center gap-2 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-zinc-200">Ports & Circuit OK</span>
+                </div>
+                <div className="flex items-center gap-2 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
+                  <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span className="text-zinc-200 font-mono text-[11px]">
+                    {maskSerialNumber(item?.serialNumberImei)}
+                  </span>
+                </div>
+              </div>
+
+              {item?.knownDefectsDesc && (
+                <div className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
+                  <strong>Disclosed Patina:</strong> {item.knownDefectsDesc}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
@@ -257,7 +464,9 @@ export default function ProductDetailPage() {
                 </h4>
                 <div className="text-zinc-400 flex items-center gap-1 text-xs">
                   <MapPin className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>{item?.shop?.address || '42 Bandra West, Hill Road'}, {item?.shop?.city || 'Mumbai'}</span>
+                  <span>
+                    {item?.shop?.address || '42 Bandra West, Hill Road'}, {item?.shop?.city || 'Mumbai'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -272,7 +481,11 @@ export default function ProductDetailPage() {
             >
               <ShoppingBag className="w-5 h-5" />
               <span>
-                {purchasing ? 'Initiating Razorpay Escrow...' : item?.status === 'SOLD' ? 'Item Sold Out' : 'Buy Now with Razorpay'}
+                {purchasing
+                  ? 'Initiating Razorpay Escrow...'
+                  : item?.status === 'SOLD'
+                  ? 'Item Sold Out'
+                  : 'Buy Now with Razorpay'}
               </span>
             </button>
             <p className="text-xs text-zinc-500 text-center font-medium">
@@ -283,49 +496,56 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Razorpay Success Dialog */}
-      {orderSuccess && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-street-card border border-neon-lime/60 rounded-2xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl relative animate-fade-in">
-            <div className="w-12 h-12 bg-neon-lime/15 text-neon-lime rounded-full border border-neon-lime/30 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
-            </div>
-            <h3 className="text-2xl font-bold text-white tracking-tight">
-              Order Placed Successfully!
-            </h3>
-            <p className="text-xs text-zinc-400">
-              Your payment order has been created and verified on Razorpay escrow.
-            </p>
-            <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-4 text-left text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Order ID:</span>
-                <span className="text-white font-mono font-semibold">{orderSuccess.orderId}</span>
+      <AnimatePresence>
+        {orderSuccess && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-street-card border border-neon-lime/60 rounded-2xl w-full max-w-md p-6 text-center space-y-4 shadow-2xl relative"
+            >
+              <div className="w-12 h-12 bg-neon-lime/15 text-neon-lime rounded-full border border-neon-lime/30 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-7 h-7" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Razorpay Order ID:</span>
-                <span className="text-neon-lime font-mono font-semibold">{orderSuccess.razorpayOrderId}</span>
+              <h3 className="text-2xl font-bold text-white tracking-tight">
+                Order Placed Successfully!
+              </h3>
+              <p className="text-xs text-zinc-400">
+                Your payment order has been created and verified on Razorpay escrow.
+              </p>
+              <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-4 text-left text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Order ID:</span>
+                  <span className="text-white font-mono font-semibold">{orderSuccess.orderId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Razorpay Order ID:</span>
+                  <span className="text-neon-lime font-mono font-semibold">{orderSuccess.razorpayOrderId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Amount Paid:</span>
+                  <span className="text-white font-bold">{formatCurrency(orderSuccess.amount)}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Amount Paid:</span>
-                <span className="text-white font-bold">{formatCurrency(orderSuccess.amount)}</span>
+              <div className="flex items-center gap-3 pt-2">
+                <Link
+                  href="/orders"
+                  className="flex-1 bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-md"
+                >
+                  Track In My Orders
+                </Link>
+                <button
+                  onClick={() => setOrderSuccess(null)}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs uppercase py-3 px-4 rounded-xl border border-zinc-800 transition-all"
+                >
+                  Close
+                </button>
               </div>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <Link
-                href="/orders"
-                className="flex-1 bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-md"
-              >
-                Track In My Orders
-              </Link>
-              <button
-                onClick={() => setOrderSuccess(null)}
-                className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs uppercase py-3 px-4 rounded-xl border border-zinc-800 transition-all"
-              >
-                Close
-              </button>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Image Zoom Lightbox Modal */}
       {zoomLightboxOpen && (

@@ -25,3 +25,16 @@ export function formatCondition(condition) {
       return condition || 'Curated Quality';
   }
 }
+
+export function formatTechGrade(grade) {
+  if (!grade) return null;
+  return grade;
+}
+
+export function maskSerialNumber(serialNumber) {
+  if (!serialNumber) return 'SECURED-ESCROW-LOCK';
+  if (serialNumber.length <= 4) return `***-${serialNumber}`;
+  const visiblePart = serialNumber.slice(-4);
+  return `SN-••••-••••-${visiblePart}`;
+}
+

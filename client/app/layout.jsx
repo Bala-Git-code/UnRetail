@@ -1,4 +1,5 @@
 import { Plus_Jakarta_Sans, Outfit, JetBrains_Mono } from 'next/font/google';
+import RouteTransitionLoader from '@/components/RouteTransitionLoader';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -32,10 +33,13 @@ export default function RootLayout({ children }) {
       className={`dark scroll-smooth ${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <body className="bg-street-black text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-neon-lime selection:text-black font-sans">
-        <div className="relative flex min-h-screen flex-col bg-street-black">
-          {children}
-        </div>
+        <RouteTransitionLoader>
+          <div className="relative flex min-h-screen flex-col bg-street-black">
+            {children}
+          </div>
+        </RouteTransitionLoader>
       </body>
     </html>
   );
 }
+

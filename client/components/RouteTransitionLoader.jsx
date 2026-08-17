@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import ThreeDLogoLoader from './ThreeDLogoLoader';
 
-export default function RouteTransitionLoader({ children }) {
+function RouteTransitionWatcher({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -28,8 +28,16 @@ export default function RouteTransitionLoader({ children }) {
 
   return (
     <>
-      {loading && <ThreeDLogoLoader compact={true} message="FLASHING ROUTE SYNC..." />}
+      {loading && <ThreeDLogoLoader compact={true} message="SYNCING ROUTE..." />}
       {children}
     </>
+  );
+}
+
+export default function RouteTransitionLoader({ children }) {
+  return (
+    <Suspense fallback={children}>
+      <RouteTransitionWatcher>{children}</RouteTransitionWatcher>
+    </Suspense>
   );
 }

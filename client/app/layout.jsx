@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, Outfit } from 'next/font/google';
+import { Plus_Jakarta_Sans, Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -13,15 +13,24 @@ const outfit = Outfit({
   display: 'swap',
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
+
 export const metadata = {
-  title: 'UNRETAIL // Multi-Vendor Thrift & Streetwear Marketplace',
+  title: 'UNRETAIL — Curated Thrift & Streetwear Marketplace',
   description:
-    'Bringing fragmented offline thrift store racks into a real-time, high-contrast, editorial online marketplace.',
+    'Real-time inventory from verified physical thrift stores and streetwear boutiques. Safe escrow payments and authentic vintage grails.',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`dark scroll-smooth ${plusJakarta.variable} ${outfit.variable}`}>
+    <html
+      lang="en"
+      className={`dark scroll-smooth ${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="bg-street-black text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-neon-lime selection:text-black font-sans">
         <div className="relative flex min-h-screen flex-col bg-street-black">
           {children}

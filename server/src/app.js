@@ -27,6 +27,11 @@ app.get('/health', (_req, res) => {
 // API Routes Router
 const apiRouter = express.Router();
 
+// --- Health Route ---
+apiRouter.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'UnRetail Express API (ES Modules)', timestamp: new Date().toISOString() });
+});
+
 // --- Auth Routes ---
 apiRouter.post('/auth/google', googleAuth);
 apiRouter.post('/auth/admin-login', adminLogin);

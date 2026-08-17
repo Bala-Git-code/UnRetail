@@ -73,20 +73,31 @@ model Shop {
 }
 
 model Item {
-  id          String     @id @default(uuid())
-  shopId      String
-  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  title       String
-  description String
-  price       Float
-  category    String
-  size        String
-  era         String
-  condition   Condition
-  images      String[]
-  status      ItemStatus @default(AVAILABLE)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                   String     @id @default(uuid())
+  shopId               String
+  shop                 Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  title                String
+  description          String
+  price                Float
+  category             String
+  subcategory          String?
+  size                 String
+  era                  String
+  condition            Condition
+  images               String[]
+  status               ItemStatus @default(AVAILABLE)
+
+  // Tech & Retro Electronics conditional anti-fraud verification fields
+  techConditionGrade   String?
+  powerOnStatus        Boolean?
+  screenSensorClarity  Boolean?
+  portChargingTested   Boolean?
+  knownDefectsReported Boolean?
+  knownDefectsDesc     String?
+  serialNumberImei     String?
+
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
   orders Order[]
 

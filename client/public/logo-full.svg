@@ -33,6 +33,9 @@
     </filter>
   </defs>
 
+  <!-- Dark Brand Canvas Background -->
+  <rect width="100%" height="100%" fill="#09090b" rx="20" />
+
   <g filter="url(#shadow3dFull)">
     <!-- Symbol Emblem Group -->
     <g transform="translate(10, 0)">

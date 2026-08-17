@@ -36,6 +36,9 @@
     </filter>
   </defs>
 
+  <!-- Dark Brand Canvas Background -->
+  <rect width="100%" height="100%" fill="#09090b" rx="16" />
+
   <g filter="url(#shadow3d)">
     <!-- Silver Teardrop Loop (Left Outer & Inner) -->
     <path d="M 62,25 

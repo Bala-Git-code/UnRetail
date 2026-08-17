@@ -34,12 +34,12 @@ export default function LandingPage() {
     },
     {
       id: 'slide-3',
-      title: 'Y2K Stussy Heavyweight Graphic Tee',
-      price: 2800,
-      conditionTag: 'Pristine • Y2K Grail',
-      shop: 'Dust & Gold (Delhi)',
-      specs: 'Size XL • Single Stitch Heritage Drop',
-      image: '/images/graphic_tee.png',
+      title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
+      price: 9400,
+      conditionTag: 'Grade A - Mint • Retro Tech',
+      shop: 'Retro Vault (Bengaluru)',
+      specs: '5.1MP CCD • Carl Zeiss Vario-Tessar',
+      image: '/images/vintage_camera.png',
     },
     {
       id: 'slide-4',
@@ -50,14 +50,48 @@ export default function LandingPage() {
       specs: 'Size US 10 • Collector Grade Box',
       image: '/images/archival_sneakers.png',
     },
+    {
+      id: 'slide-5',
+      title: 'Nintendo Game Boy Color - Atomic Purple',
+      price: 7800,
+      conditionTag: 'Grade A - Mint • 90s Gaming',
+      shop: 'Relic Vintage Co. (Mumbai)',
+      specs: 'Handheld • 100% Tested Audio & LCD',
+      image: '/images/retro_gaming.png',
+    },
   ];
 
   const categories = [
-    { name: '90s Denim & Jeans', count: '140+ Racks', image: '/images/denim_vintage.png', era: '90s' },
-    { name: 'Heavy Outerwear', count: '95+ Racks', image: '/images/leather_jacket.png', era: '80s-90s' },
-    { name: 'Graphic Tees', count: '280+ Racks', image: '/images/graphic_tee.png', era: 'Y2K' },
-    { name: 'Rare Footwear', count: '60+ Pairs', image: '/images/archival_sneakers.png', era: 'Archival' },
+    {
+      name: 'Apparel / Clothing',
+      count: '180+ Racks',
+      image: '/images/denim_vintage.png',
+      era: '90s-Y2K',
+      link: '/search?category=Apparel',
+    },
+    {
+      name: 'Accessories',
+      count: '95+ Grails',
+      image: '/images/archival_sneakers.png',
+      era: 'Archival',
+      link: '/search?category=Accessories',
+    },
+    {
+      name: 'Tech & Retro Electronics',
+      count: '45+ Verified Units',
+      image: '/images/vintage_camera.png',
+      era: 'Y2K-90s',
+      link: '/search?category=Tech%20%26%20Retro%20Electronics',
+    },
+    {
+      name: 'Outerwear & Jackets',
+      count: '80+ Heavy Pieces',
+      image: '/images/leather_jacket.png',
+      era: '80s-90s',
+      link: '/search?category=Apparel&subcategory=Outerwear%20%26%20Jackets',
+    },
   ];
+
 
   const staticShops = [
     {
@@ -322,7 +356,7 @@ export default function LandingPage() {
           {categories.map((cat, idx) => (
             <Link
               key={idx}
-              href={`/search?category=${encodeURIComponent(cat.name.split(' ')[0])}`}
+              href={cat.link || `/search?category=${encodeURIComponent(cat.name)}`}
               className="group relative aspect-[3/4] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-neon-lime transition-all duration-300 card-hover-effect shadow-xl"
             >
               <img

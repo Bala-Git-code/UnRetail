@@ -23,6 +23,7 @@ enum ItemStatus {
   AVAILABLE
   PENDING
   SOLD
+  SOLD_OFFLINE
 }
 
 enum OrderStatus {
@@ -73,20 +74,23 @@ model Shop {
 }
 
 model Item {
-  id          String     @id @default(uuid())
-  shopId      String
-  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  title       String
-  description String
-  price       Float
-  category    String
-  size        String
-  era         String
-  condition   Condition
-  images      String[]
-  status      ItemStatus @default(AVAILABLE)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  shopId       String
+  shop         Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  price        Float
+  category     String
+  subcategory  String?
+  brand        String?
+  serialNumber String?
+  size         String
+  era          String
+  condition    Condition
+  images       String[]
+  status       ItemStatus @default(AVAILABLE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   orders Order[]
 
@@ -105,6 +109,10 @@ model Order {
   razorpayOrderId   String      @unique
   razorpayPaymentId String?
   status            OrderStatus @default(PENDING)
+  trackingCode      String?
+  carrierName       String?
+  escrowStatus      String?     @default("ACTIVE")
+  escrowReleaseDate DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

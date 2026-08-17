@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
-import { Camera, Upload, CheckCircle2, AlertCircle, ArrowLeft, Tag, Layers, Sparkles, X } from 'lucide-react';
+import { Camera, Upload, CheckCircle2, AlertCircle, ArrowLeft, Tag, Layers, Sparkles, X, Info } from 'lucide-react';
 
 export default function NewItemListingPage() {
   const router = useRouter();
@@ -12,6 +12,9 @@ export default function NewItemListingPage() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Apparel');
+  const [subcategory, setSubcategory] = useState('');
+  const [brand, setBrand] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
   const [size, setSize] = useState('L');
   const [era, setEra] = useState('90s');
   const [condition, setCondition] = useState('GENTLY_USED');
@@ -20,6 +23,8 @@ export default function NewItemListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [hasShop, setHasShop] = useState(true);
+  const [checkingShop, setCheckingShop] = useState(true);
 
   const eras = ['70s', '80s', '90s', 'Y2K', 'Archival'];
   const categories = ['Apparel', 'Outerwear', 'Denim', 'Footwear', 'Accessories'];
@@ -29,6 +34,26 @@ export default function NewItemListingPage() {
     { value: 'GENTLY_USED', label: 'Gently Loved' },
     { value: 'FLAWED', label: 'Vintage Character' },
   ];
+
+  useEffect(() => {
+    checkShopStatus();
+  }, []);
+
+  const checkShopStatus = async () => {
+    try {
+      const res = await apiClient.get('/merchant/my-shop');
+      if (res.data?.success && res.data?.data) {
+        setHasShop(true);
+      } else {
+        setHasShop(false);
+      }
+    } catch (err) {
+      console.warn('Failed to verify shop status:', err);
+      setHasShop(false);
+    } finally {
+      setCheckingShop(false);
+    }
+  };
 
   // Mobile camera / image upload handler
   const handleImageUpload = async (e) => {
@@ -90,11 +115,13 @@ export default function NewItemListingPage() {
 
     try {
       const payload = {
-        shopId: 'shop-1',
         title,
         description,
         price: parseFloat(price),
         category,
+        subcategory: subcategory || undefined,
+        brand: brand || undefined,
+        serialNumber: serialNumber || undefined,
         size,
         era,
         condition,
@@ -241,6 +268,42 @@ export default function NewItemListingPage() {
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="e.g. 5499"
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm tabular-nums focus:outline-none focus:border-neon-lime transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Brand, Subcategory, Serial Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Brand (Optional)</label>
+              <input
+                type="text"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                placeholder="e.g. Levi's, Harley"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Subcategory (Optional)</label>
+              <input
+                type="text"
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                placeholder="e.g. 501, Leather Bomber"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Serial Number / Verification ID</label>
+              <input
+                type="text"
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+                placeholder="e.g. SN-99824"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
               />
             </div>
           </div>

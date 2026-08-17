@@ -61,6 +61,7 @@ export const googleAuth = async (req, res) => {
         update: {
           fullName: userName,
           avatarUrl: userAvatar,
+          role: targetRole, // Dynamically update role on login based on selected tab
         },
         create: {
           email: userEmail,

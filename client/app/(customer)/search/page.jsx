@@ -2,32 +2,59 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '@/lib/api-client';
 import { formatCurrency, formatCondition } from '@/lib/utils';
-import { Search, Filter, X, ShieldCheck, Tag, ShoppingBag, SlidersHorizontal, RefreshCw, Sparkles } from 'lucide-react';
+import {
+  TAXONOMY,
+  getSubcategories,
+  isTechCategory,
+  TECH_CONDITION_GRADES,
+} from '@/lib/taxonomy';
+import {
+  Search,
+  Filter,
+  X,
+  ShieldCheck,
+  Tag,
+  ShoppingBag,
+  SlidersHorizontal,
+  RefreshCw,
+  Sparkles,
+  Cpu,
+  Lock,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedEra, setSelectedEra] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
+  const [selectedTechGrade, setSelectedTechGrade] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [priceMax, setPriceMax] = useState(15000);
+  const [priceMax, setPriceMax] = useState(25000);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     fetchFilteredItems();
-  }, [query, selectedEra, selectedCondition, selectedCity]);
+  }, [query, selectedCategory, selectedSubcategory, selectedEra, selectedCondition, selectedTechGrade, selectedCity]);
 
   const fetchFilteredItems = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (query) params.append('query', query);
+      if (selectedCategory) params.append('category', selectedCategory);
+      if (selectedSubcategory) params.append('subcategory', selectedSubcategory);
       if (selectedEra) params.append('era', selectedEra);
       if (selectedCondition) params.append('condition', selectedCondition);
+      if (selectedTechGrade) params.append('techConditionGrade', selectedTechGrade);
       if (selectedCity) params.append('city', selectedCity);
 
       const res = await apiClient.get(`/items?${params.toString()}`);
@@ -43,11 +70,14 @@ export default function SearchPage() {
 
   const handleClearFilters = () => {
     setQuery('');
+    setSelectedCategory('');
+    setSelectedSubcategory('');
     setSelectedSize('');
     setSelectedEra('');
     setSelectedCondition('');
+    setSelectedTechGrade('');
     setSelectedCity('');
-    setPriceMax(15000);
+    setPriceMax(25000);
   };
 
   const filteredItems = items.filter((item) => {
@@ -56,14 +86,27 @@ export default function SearchPage() {
     return true;
   });
 
-  const sizes = ['S', 'M', 'L', 'XL', 'W32 L30', 'OS'];
+  const sizes = ['S', 'M', 'L', 'XL', 'W32 L30', 'Pocket', 'Handheld', 'US 10', 'OS'];
   const eras = ['70s', '80s', '90s', 'Y2K', 'Archival'];
-  const conditions = [
+  const apparelConditions = [
     { value: 'LIKE_NEW', label: 'Pristine / Like New' },
     { value: 'GENTLY_USED', label: 'Gently Loved' },
     { value: 'FLAWED', label: 'Vintage Character' },
   ];
   const cities = ['Mumbai', 'Bengaluru', 'Delhi', 'Kolkata'];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+  };
 
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 p-4 md:p-8 max-w-7xl mx-auto font-sans">
@@ -73,7 +116,7 @@ export default function SearchPage() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon-lime/10 border border-neon-lime/20 rounded-full text-xs font-medium text-neon-lime">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Multi-Attribute Search Engine</span>
+              <span>Multi-Tier Taxonomy & Search Engine</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
               Real-Time Search & Racks
@@ -93,7 +136,7 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search archival pieces (e.g. Levi 501, Harley Davidson, 90s Bomber, Carhartt)..."
+            placeholder="Search across apparel & retro tech (e.g. Levi 501, Sony Cyber-shot, Game Boy, Harley Bomber)..."
             className="w-full bg-street-card/90 border border-zinc-800 rounded-2xl text-white text-sm pl-12 pr-10 py-3.5 focus:outline-none focus:border-neon-lime transition-all shadow-lg placeholder:text-zinc-500"
           />
           {query && (
@@ -107,13 +150,31 @@ export default function SearchPage() {
         </div>
 
         {/* Active Filter Chips Bar */}
-        {(selectedSize || selectedEra || selectedCondition || selectedCity || query) && (
+        {(selectedCategory || selectedSubcategory || selectedSize || selectedEra || selectedCondition || selectedTechGrade || selectedCity || query) && (
           <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
             <span className="text-zinc-500 font-medium mr-1">Active Filters:</span>
             {query && (
               <span className="bg-zinc-900 text-neon-lime border border-neon-lime/30 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                 Query: &quot;{query}&quot;
                 <X className="w-3.5 h-3.5 cursor-pointer hover:text-white" onClick={() => setQuery('')} />
+              </span>
+            )}
+            {selectedCategory && (
+              <span className="bg-zinc-900 text-white border border-neon-lime/40 px-3 py-1 rounded-full flex items-center gap-1.5 font-semibold">
+                Category: {selectedCategory}
+                <X className="w-3.5 h-3.5 cursor-pointer hover:text-rose-400" onClick={() => { setSelectedCategory(''); setSelectedSubcategory(''); }} />
+              </span>
+            )}
+            {selectedSubcategory && (
+              <span className="bg-zinc-900 text-neon-lime border border-neon-lime/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+                Subcategory: {selectedSubcategory}
+                <X className="w-3.5 h-3.5 cursor-pointer hover:text-rose-400" onClick={() => setSelectedSubcategory('')} />
+              </span>
+            )}
+            {selectedTechGrade && (
+              <span className="bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 px-3 py-1 rounded-full flex items-center gap-1.5 font-bold">
+                Tech Grade: {selectedTechGrade}
+                <X className="w-3.5 h-3.5 cursor-pointer hover:text-rose-400" onClick={() => setSelectedTechGrade('')} />
               </span>
             )}
             {selectedSize && (
@@ -159,7 +220,7 @@ export default function SearchPage() {
         >
           <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
             <span className="font-bold text-white flex items-center gap-2 text-sm">
-              <Filter className="w-4 h-4 text-neon-lime" /> Attribute Filters
+              <Filter className="w-4 h-4 text-neon-lime" /> Faceted Taxonomy
             </span>
             <button
               onClick={handleClearFilters}
@@ -169,15 +230,108 @@ export default function SearchPage() {
             </button>
           </div>
 
-          {/* Size Filter */}
-          <div className="space-y-2">
-            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Size Rack</label>
-            <div className="flex flex-wrap gap-2">
+          {/* Category Facet Accordion */}
+          <div className="space-y-3">
+            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">
+              Parent Category
+            </label>
+            <div className="space-y-1.5">
+              {TAXONOMY.map((cat) => {
+                const isCatActive = selectedCategory === cat.id;
+                return (
+                  <div key={cat.id} className="space-y-1">
+                    <button
+                      onClick={() => {
+                        if (isCatActive) {
+                          setSelectedCategory('');
+                          setSelectedSubcategory('');
+                        } else {
+                          setSelectedCategory(cat.id);
+                          setSelectedSubcategory('');
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-xl font-medium transition-all ${
+                        isCatActive
+                          ? 'bg-neon-lime/10 border border-neon-lime text-neon-lime font-bold'
+                          : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {cat.id === 'Tech & Retro Electronics' && <Cpu className="w-3.5 h-3.5 text-cyan-400" />}
+                        <span>{cat.name}</span>
+                      </span>
+                      {isCatActive ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {/* Subcategory Pills */}
+                    <AnimatePresence>
+                      {isCatActive && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="pl-2 pt-1 pb-1 space-y-1 overflow-hidden"
+                        >
+                          {cat.subcategories.map((sub) => {
+                            const isSubActive = selectedSubcategory === sub.id;
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => setSelectedSubcategory(isSubActive ? '' : sub.id)}
+                                className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] transition-all flex items-center justify-between ${
+                                  isSubActive
+                                    ? 'bg-neon-lime text-black font-bold'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                                }`}
+                              >
+                                <span>{sub.name}</span>
+                                {isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-black" />}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Tech Condition Grades (Visible if Tech is selected or no specific category is filtered) */}
+          {(!selectedCategory || selectedCategory === 'Tech & Retro Electronics') && (
+            <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+              <label className="text-cyan-400 font-semibold block uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Tech Functional Grades</span>
+              </label>
+              <div className="space-y-1.5">
+                {TECH_CONDITION_GRADES.map((grade) => (
+                  <button
+                    key={grade.value}
+                    onClick={() => setSelectedTechGrade(selectedTechGrade === grade.value ? '' : grade.value)}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all border ${
+                      selectedTechGrade === grade.value
+                        ? 'bg-cyan-950 border-cyan-400 text-cyan-300 font-bold'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {grade.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sizing Filter */}
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Size / Form Factor</label>
+            <div className="flex flex-wrap gap-1.5">
               {sizes.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSelectedSize(selectedSize === s ? '' : s)}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-all text-xs ${
                     selectedSize === s
                       ? 'bg-neon-lime text-black shadow-sm font-bold'
                       : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
@@ -190,14 +344,14 @@ export default function SearchPage() {
           </div>
 
           {/* Era Filter */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
             <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Vintage Era</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {eras.map((era) => (
                 <button
                   key={era}
                   onClick={() => setSelectedEra(selectedEra === era ? '' : era)}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-all text-xs ${
                     selectedEra === era
                       ? 'bg-neon-lime text-black shadow-sm font-bold'
                       : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
@@ -209,11 +363,11 @@ export default function SearchPage() {
             </div>
           </div>
 
-          {/* Condition Filter */}
-          <div className="space-y-2">
-            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Item Condition</label>
+          {/* Condition Filter (Apparel) */}
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Apparel Condition</label>
             <div className="space-y-2 pt-1">
-              {conditions.map((c) => (
+              {apparelConditions.map((c) => (
                 <label key={c.value} className="flex items-center gap-2.5 cursor-pointer text-zinc-300 hover:text-white">
                   <input
                     type="checkbox"
@@ -228,7 +382,7 @@ export default function SearchPage() {
           </div>
 
           {/* City Filter */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
             <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Boutique City</label>
             <select
               value={selectedCity}
@@ -245,7 +399,7 @@ export default function SearchPage() {
           </div>
 
           {/* Price Range Slider */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
             <div className="flex justify-between text-zinc-400 font-semibold text-[11px] uppercase tracking-wider">
               <span>Max Price</span>
               <span className="text-neon-lime font-bold tabular-nums text-xs">{formatCurrency(priceMax)}</span>
@@ -253,7 +407,7 @@ export default function SearchPage() {
             <input
               type="range"
               min={500}
-              max={25000}
+              max={30000}
               step={500}
               value={priceMax}
               onChange={(e) => setPriceMax(Number(e.target.value))}
@@ -265,8 +419,10 @@ export default function SearchPage() {
         {/* Results Catalogue Grid */}
         <main className="lg:col-span-9">
           <div className="flex items-center justify-between mb-4 text-xs text-zinc-400 font-medium">
-            <span>Showing <strong className="text-white">{filteredItems.length}</strong> matching rack items</span>
-            {(selectedSize || selectedEra || selectedCondition || selectedCity || query) && (
+            <span>
+              Showing <strong className="text-white">{filteredItems.length}</strong> matching rack items
+            </span>
+            {(selectedCategory || selectedSubcategory || selectedSize || selectedEra || selectedCondition || selectedTechGrade || selectedCity || query) && (
               <span className="text-neon-lime">Filters Applied</span>
             )}
           </div>
@@ -292,13 +448,21 @@ export default function SearchPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {filteredItems.map((item) => {
                 const img = item.images?.[0] || '/images/denim_vintage.png';
+                const isItemTech = isTechCategory(item.category);
+
                 return (
-                  <div
+                  <motion.div
                     key={item.id}
-                    className="bg-street-card/80 border border-zinc-800/90 hover:border-zinc-700/90 rounded-2xl transition-all flex flex-col justify-between overflow-hidden group card-hover-effect shadow-xl backdrop-blur-sm"
+                    variants={cardVariants}
+                    className="bg-street-card/80 border border-zinc-800/90 hover:border-zinc-700 rounded-2xl transition-all flex flex-col justify-between overflow-hidden group card-hover-effect shadow-xl backdrop-blur-sm"
                   >
                     <div className="relative aspect-[4/5] bg-zinc-950 overflow-hidden border-b border-zinc-800/80">
                       <img
@@ -310,8 +474,21 @@ export default function SearchPage() {
                         }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3 bg-black/70 text-[11px] text-emerald-400 font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur-md">
-                        {formatCondition(item.condition)}
+                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                        {isItemTech && item.techConditionGrade ? (
+                          <span className="bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-cyan-500/40 backdrop-blur-md">
+                            {item.techConditionGrade}
+                          </span>
+                        ) : (
+                          <span className="bg-black/70 text-[11px] text-emerald-400 font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur-md">
+                            {formatCondition(item.condition)}
+                          </span>
+                        )}
+                        {item.subcategory && (
+                          <span className="bg-black/75 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded-full border border-zinc-700/80 backdrop-blur-md">
+                            {item.subcategory}
+                          </span>
+                        )}
                       </div>
                       <div className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neon-lime text-black shadow-sm">
                         {item.size || 'OS'}
@@ -343,10 +520,10 @@ export default function SearchPage() {
                         </Link>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           )}
         </main>
       </div>

@@ -8,8 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-plus-jakarta)', 'Inter', 'sans-serif'],
-        heading: ['var(--font-outfit)', 'Plus Jakarta Sans', 'sans-serif'],
+        sans: ['var(--font-plus-jakarta)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ['var(--font-outfit)', 'var(--font-plus-jakarta)', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
         neon: {
@@ -19,8 +20,9 @@ module.exports = {
         },
         street: {
           black: '#09090b',
-          dark: '#121215',
-          card: '#18181b',
+          dark: '#111114',
+          card: '#16161a',
+          cardHover: '#1c1c22',
           border: '#27272a',
           muted: '#71717a',
         },

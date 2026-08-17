@@ -288,33 +288,31 @@ export default function LoginPage() {
           <div className="max-w-md w-full mx-auto space-y-8">
             
             {/* Header & Persona Title */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="h-px bg-neon-lime w-8" />
-                <span className="text-xs font-mono font-bold text-neon-lime uppercase tracking-widest">
-                  Authentication Portal
-                </span>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon-lime/10 border border-neon-lime/20 rounded-full text-xs font-medium text-neon-lime">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Verified Authentication Portal</span>
               </div>
-              <h2 className="text-3xl font-black uppercase text-white tracking-tight">
-                Google Identity Sign-In
+              <h2 className="text-3xl font-extrabold text-white tracking-tight">
+                Single Sign-On
               </h2>
-              <p className="text-xs font-mono text-zinc-400">
-                Select your platform role to proceed with verified single sign-on.
+              <p className="text-xs text-zinc-400">
+                Select your platform role to proceed with verified Google OAuth identity.
               </p>
             </div>
 
             {/* Role Toggle Tabs */}
             <div className="space-y-2">
-              <label className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">
                 Select Account Role:
               </label>
-              <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1.5 border border-zinc-800 font-mono text-xs">
+              <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setRole('CUSTOMER')}
-                  className={`py-3 px-3 font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                  className={`py-3 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                     role === 'CUSTOMER'
-                      ? 'bg-neon-lime text-black shadow-md font-black'
+                      ? 'bg-neon-lime text-black shadow-md font-bold'
                       : 'text-zinc-400 hover:text-white bg-zinc-900/40'
                   }`}
                 >
@@ -325,9 +323,9 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setRole('MERCHANT')}
-                  className={`py-3 px-3 font-bold uppercase transition-all flex items-center justify-center gap-2 ${
+                  className={`py-3 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                     role === 'MERCHANT'
-                      ? 'bg-neon-lime text-black shadow-md font-black'
+                      ? 'bg-neon-lime text-black shadow-md font-bold'
                       : 'text-zinc-400 hover:text-white bg-zinc-900/40'
                   }`}
                 >
@@ -339,28 +337,28 @@ export default function LoginPage() {
 
             {/* Error / Success Notifications */}
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 font-mono text-xs flex items-center gap-3 animate-shake">
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-xl text-xs flex items-center gap-3 animate-shake">
                 <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
                 <span>{error}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 font-mono text-xs flex items-center gap-3">
+              <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl text-xs flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400 animate-bounce" />
                 <span>{successMsg}</span>
               </div>
             )}
 
             {/* Primary Action Card: Authentic Google Sign-In Button */}
-            <div className="bg-street-card border border-zinc-800 p-6 space-y-6 shadow-2xl relative overflow-hidden">
+            <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-sm">
               <div className="absolute top-0 right-0 w-32 h-32 bg-neon-lime/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="text-center space-y-1">
-                <div className="text-xs font-mono font-bold text-zinc-300 uppercase">
+                <div className="text-xs font-semibold text-zinc-300">
                   Signing in as: <span className="text-neon-lime">{role === 'MERCHANT' ? 'Boutique Store Vendor' : 'Vintage Collector'}</span>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-500">
+                <p className="text-xs text-zinc-400">
                   {role === 'MERCHANT'
                     ? 'Access inventory management, physical rack POS & order fulfillment'
                     : 'Browse rare grails, track purchases & lock escrow transactions'}
@@ -371,14 +369,14 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <div 
                   ref={googleBtnRef} 
-                  className="w-full flex justify-center min-h-[44px] bg-zinc-950/80 border border-zinc-800 rounded p-1" 
+                  className="w-full flex justify-center min-h-[44px] bg-zinc-950/80 border border-zinc-800 rounded-xl p-1" 
                 />
 
                 <button
                   type="button"
                   onClick={() => triggerGoogleLoginPrompt()}
                   disabled={loading}
-                  className="w-full bg-white hover:bg-zinc-100 text-zinc-900 font-sans font-bold text-sm py-3.5 px-5 flex items-center justify-center gap-3 shadow-lg hover:shadow-neon-lime/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 group border border-zinc-200"
+                  className="w-full bg-white hover:bg-zinc-100 text-zinc-900 font-bold text-sm py-3.5 px-5 rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-neon-lime/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 group border border-zinc-200"
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-zinc-800 border-t-transparent rounded-full animate-spin" />
@@ -411,7 +409,7 @@ export default function LoginPage() {
 
                 <div className="relative py-1 flex items-center justify-center">
                   <div className="border-t border-zinc-800 w-full" />
-                  <span className="bg-street-card px-3 text-[10px] font-mono text-zinc-500 uppercase shrink-0">
+                  <span className="bg-street-card px-3 text-xs text-zinc-500 font-medium shrink-0">
                     Or Instant Sign-In
                   </span>
                 </div>
@@ -420,7 +418,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => handleDemoLogin(role)}
                   disabled={loading}
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-neon-lime font-mono text-xs font-bold py-3 px-4 border border-neon-lime/40 hover:border-neon-lime transition-all flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-neon-lime text-xs font-bold py-3 px-4 rounded-xl border border-neon-lime/40 hover:border-neon-lime transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Sparkles className="w-4 h-4 text-neon-lime animate-pulse" />
                   <span>Continue As {role === 'MERCHANT' ? 'Relic Vintage Store Owner' : 'Verified Archival Collector'}</span>
@@ -429,25 +427,25 @@ export default function LoginPage() {
             </div>
 
             {/* Trust & Guarantee Badges */}
-            <div className="grid grid-cols-2 gap-3 pt-2 text-[10px] font-mono text-zinc-400">
-              <div className="flex items-center gap-2 bg-zinc-950 p-2.5 border border-zinc-800/60">
+            <div className="grid grid-cols-2 gap-3 pt-1 text-xs text-zinc-400">
+              <div className="flex items-center gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/80">
                 <ShieldCheck className="w-4 h-4 text-neon-lime shrink-0" />
                 <span>Google OAuth 2.0 SSL Verified</span>
               </div>
-              <div className="flex items-center gap-2 bg-zinc-950 p-2.5 border border-zinc-800/60">
+              <div className="flex items-center gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800/80">
                 <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Zero Password Storage</span>
               </div>
             </div>
 
             {/* Admin Desk Link */}
-            <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono">
+            <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between text-xs">
               <span className="text-zinc-500">Need admin desk access?</span>
               <Link 
                 href="/admin/login" 
-                className="text-zinc-400 hover:text-amber-400 transition-colors inline-flex items-center gap-1"
+                className="text-zinc-400 hover:text-amber-400 transition-colors inline-flex items-center gap-1 font-medium"
               >
-                Admin Credentials Portal <ArrowRight className="w-3 h-3" />
+                Admin Credentials Portal <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 

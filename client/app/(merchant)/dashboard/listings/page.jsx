@@ -91,23 +91,26 @@ export default function MerchantListingsPage() {
   });
 
   return (
-    <div className="p-4 md:p-8 font-sans space-y-6">
+    <div className="p-4 md:p-8 font-sans space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-zinc-800 font-mono">
-        <div>
-          <span className="text-xs text-neon-lime uppercase tracking-widest block">INSTORE RACK SYNC DESK</span>
-          <h1 className="text-3xl font-black uppercase text-white tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-zinc-800/80">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon-lime/10 border border-neon-lime/20 rounded-full text-xs font-medium text-neon-lime">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Storefront Rack Sync Desk</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Inventory Racks & Listings
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Tap &quot;Mark Sold In-Store&quot; to instantly remove items sold off physical racks from online customer feeds.
+          <p className="text-xs text-zinc-400 max-w-xl">
+            Tap &quot;1-Tap Mark Sold In-Store&quot; to instantly remove items purchased off physical racks from online customer feeds.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/new-item"
-            className="bg-neon-lime text-black font-black text-xs uppercase tracking-wider px-4 py-2.5 flex items-center gap-2 hover:bg-white transition-all shadow-[2px_2px_0px_0px_#ffffff]"
+            className="bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
           >
             <PlusCircle className="w-4 h-4" /> Add New Item
           </Link>
@@ -115,18 +118,18 @@ export default function MerchantListingsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 font-mono text-xs select-none">
+      <div className="flex items-center gap-2 text-xs select-none">
         {['ALL', 'AVAILABLE', 'SOLD'].map((st) => (
           <button
             key={st}
             onClick={() => setStatusFilter(st)}
-            className={`px-4 py-2 font-bold uppercase transition-all ${
+            className={`px-4 py-2 rounded-full font-semibold transition-all ${
               statusFilter === st
-                ? 'bg-neon-lime text-black border border-neon-lime shadow-[2px_2px_0px_0px_#ffffff]'
-                : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white'
+                ? 'bg-neon-lime text-black shadow-[0_0_16px_rgba(204,255,0,0.3)] font-bold'
+                : 'bg-zinc-900/90 text-zinc-400 border border-zinc-800 hover:text-white'
             }`}
           >
-            {st === 'ALL' ? 'All Rack Items' : st}
+            {st === 'ALL' ? 'All Rack Items' : st === 'AVAILABLE' ? 'Available Racks' : 'Sold Out'}
           </button>
         ))}
       </div>
@@ -135,30 +138,29 @@ export default function MerchantListingsPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="bg-street-card border border-zinc-800 h-24 animate-pulse" />
+            <div key={n} className="bg-street-card/80 border border-zinc-800 rounded-2xl h-24 animate-pulse" />
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="bg-street-card border border-zinc-800 p-12 text-center font-mono space-y-3">
+        <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-12 text-center space-y-3 shadow-xl">
           <Layers className="w-10 h-10 text-zinc-600 mx-auto" />
-          <h3 className="text-lg font-bold text-white uppercase">No Inventory Items Found</h3>
-          <p className="text-xs text-zinc-400">Add a new 60-second camera listing to populate your rack.</p>
+          <h3 className="text-lg font-bold text-white">No Inventory Items Found</h3>
+          <p className="text-xs text-zinc-400">Add a new item to populate your boutique rack.</p>
         </div>
       ) : (
-        <div className="bg-street-card border border-zinc-800 font-mono text-xs overflow-hidden">
-          <div className="divide-y divide-zinc-800">
+        <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl text-xs overflow-hidden shadow-xl backdrop-blur-sm">
+          <div className="divide-y divide-zinc-800/70">
             {filteredItems.map((item) => {
-              const img =
-                item.images?.[0] || '/images/denim_vintage.png';
+              const img = item.images?.[0] || '/images/denim_vintage.png';
               const isSold = item.status === 'SOLD';
 
               return (
                 <div
                   key={item.id}
-                  className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-zinc-900/50 transition-colors"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-zinc-900/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-20 bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 relative">
+                    <div className="w-16 h-20 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shrink-0 relative">
                       <img
                         src={img}
                         alt={item.title}
@@ -169,7 +171,7 @@ export default function MerchantListingsPage() {
                         className="w-full h-full object-cover"
                       />
                       {isSold && (
-                        <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-black text-rose-400 uppercase tracking-widest">
+                        <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-bold text-rose-400 uppercase tracking-wider backdrop-blur-xs">
                           SOLD
                         </div>
                       )}
@@ -178,37 +180,39 @@ export default function MerchantListingsPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`px-2 py-0.5 text-[9px] font-bold uppercase ${
-                            isSold ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
+                            isSold
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/25'
+                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
                           }`}
                         >
                           {item.status}
                         </span>
-                        <span className="text-[10px] text-zinc-500">Size: {item.size || 'OS'} • Era: {item.era || '90s'}</span>
+                        <span className="text-xs text-zinc-400">Size: <strong className="text-zinc-300">{item.size || 'OS'}</strong> • Era: <strong className="text-zinc-300">{item.era || '90s'}</strong></span>
                       </div>
-                      <h3 className="text-sm font-bold text-white uppercase tracking-tight line-clamp-1">{item.title}</h3>
-                      <div className="text-base font-extrabold text-neon-lime">{formatCurrency(item.price)}</div>
+                      <h3 className="text-sm font-semibold text-white tracking-tight line-clamp-1">{item.title}</h3>
+                      <div className="text-base font-bold text-white tabular-nums">{formatCurrency(item.price)}</div>
                     </div>
                   </div>
 
                   {/* 1-Tap Mark Sold In-Store Action Toggle */}
-                  <div className="flex items-center gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800">
+                  <div className="flex items-center gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/80">
                     <button
                       onClick={() => handleToggleSoldStatus(item)}
                       disabled={updatingId === item.id}
-                      className={`flex-1 sm:flex-initial px-4 py-3 border font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[2px_2px_0px_0px_#ffffff] ${
+                      className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
                         isSold
-                          ? 'bg-zinc-900 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500 hover:text-black'
-                          : 'bg-rose-500/20 text-rose-400 border-rose-500/50 hover:bg-rose-500 hover:text-white'
+                          ? 'bg-zinc-900 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500 hover:text-black'
+                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500 hover:text-white'
                       }`}
                     >
-                      <Zap className="w-4 h-4" />
+                      <Zap className="w-3.5 h-3.5" />
                       <span>
                         {updatingId === item.id
                           ? 'Syncing...'
                           : isSold
                           ? 'Relist Available'
-                          : '1-Tap Mark Sold In-Store'}
+                          : '1-Tap Mark Sold'}
                       </span>
                     </button>
                   </div>

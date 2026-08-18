@@ -24,6 +24,17 @@ export default function MerchantLayout({ children }) {
     }
   }, []);
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('unretail_token');
+      localStorage.removeItem('unretail_user');
+      window.location.href = '/login';
+    } else {
+      setUser(null);
+      router.push('/login');
+    }
+  };
+
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'New Item', href: '/dashboard/new-item', icon: PlusCircle },
@@ -76,13 +87,20 @@ export default function MerchantLayout({ children }) {
           </nav>
         </div>
 
-        <div className="pt-4 border-t border-zinc-800/80">
+        <div className="pt-4 border-t border-zinc-800/80 space-y-2">
           <Link
             href="/feed"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-xs font-medium"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-xs font-medium px-2 py-1.5 rounded-lg hover:bg-zinc-900/50"
           >
             <ArrowLeft className="w-4 h-4 text-neon-lime" /> Back to Catalog Feed
           </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 text-zinc-400 hover:text-rose-400 transition-colors text-xs font-medium px-2 py-1.5 rounded-lg hover:bg-rose-500/10 cursor-pointer text-left group"
+          >
+            <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-rose-400 transition-colors" />
+            <span>Log Out</span>
+          </button>
         </div>
       </aside>
 
@@ -102,7 +120,7 @@ export default function MerchantLayout({ children }) {
 
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-bold text-white">{user?.fullName || 'Aarav Patel'}</div>
+              <div className="text-xs font-bold text-white">{user?.fullName || 'Executive Platform Admin'}</div>
               <div className="text-[11px] text-zinc-500 font-medium">Relic Vintage Co. (Mumbai)</div>
             </div>
             <img
@@ -110,6 +128,14 @@ export default function MerchantLayout({ children }) {
               alt="Profile"
               className="w-8 h-8 rounded-full border border-zinc-700 object-cover"
             />
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 hover:border-rose-500/40 text-zinc-300 hover:text-rose-400 px-3 py-1.5 rounded-xl font-semibold text-xs transition-all shadow-sm active:scale-95 group cursor-pointer"
+              title="Log Out of Merchant Portal"
+            >
+              <LogOut className="w-3.5 h-3.5 text-zinc-400 group-hover:text-rose-400 transition-colors" />
+              <span>Log Out</span>
+            </button>
           </div>
         </header>
 

@@ -81,7 +81,7 @@ const MOCK_ITEMS = [
     description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger.',
     price: 9400,
     category: 'Tech & Retro Electronics',
-    subcategory: 'Digicams & 35mm Film',
+    subcategory: 'Digicams',
     brand: 'Sony',
     size: 'Pocket',
     era: 'Y2K',
@@ -106,7 +106,7 @@ const MOCK_ITEMS = [
     description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
     price: 7800,
     category: 'Tech & Retro Electronics',
-    subcategory: 'Gaming Handhelds',
+    subcategory: 'Gaming',
     brand: 'Nintendo',
     size: 'Handheld',
     era: '90s',
@@ -131,7 +131,7 @@ const MOCK_ITEMS = [
     description: 'High-end brushed aluminum Japanese cassette player with Dolby B NR, auto-reverse, and mega bass.',
     price: 11200,
     category: 'Tech & Retro Electronics',
-    subcategory: 'Audio & Vinyl',
+    subcategory: 'Electronics',
     brand: 'Sony',
     size: 'Slim',
     era: '90s',
@@ -369,8 +369,8 @@ export const createItem = async (req, res) => {
       });
     }
 
-    // Tech & Retro Electronics Conditional Anti-Fraud Validation
-    if (category === 'Tech & Retro Electronics') {
+    // Tech & Electronics Conditional Anti-Fraud Validation
+    if (category === 'Tech & Retro Electronics' || category === 'Tech & Electronics' || category?.toLowerCase()?.includes('tech') || category?.toLowerCase()?.includes('electronics')) {
       const missingTechFields = [];
       if (!techConditionGrade) missingTechFields.push('Functional Condition Grade');
       if (!serialNumberImei || serialNumberImei.trim() === '') missingTechFields.push('Serial Number / IMEI (Private)');

@@ -61,18 +61,22 @@ export default function AdminLayout({ children }) {
         setAuthorized(true);
       }
     } catch (err) {
-      setLoginError(err.response?.data?.error || 'Invalid administrative credentials');
+      setLoginError(err.response?.data?.error || err.message || 'Unable to connect to server. Please ensure backend is running.');
     } finally {
       setLoginLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('unretail_token');
-    localStorage.removeItem('unretail_user');
-    setUser(null);
-    setAuthorized(false);
-    router.push('/login');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('unretail_token');
+      localStorage.removeItem('unretail_user');
+      window.location.href = '/login';
+    } else {
+      setUser(null);
+      setAuthorized(false);
+      router.push('/login');
+    }
   };
 
   if (pathname === '/admin/login') {

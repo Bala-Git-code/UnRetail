@@ -19,6 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+
 // Global Middlewares
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());

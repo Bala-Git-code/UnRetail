@@ -16,8 +16,9 @@ export const TAXONOMY = [
       { id: 'Denim & Bottoms', name: 'Denim & Bottoms', slug: 'denim-bottoms' },
       { id: 'Dresses & Skirts', name: 'Dresses & Skirts', slug: 'dresses-skirts' },
       { id: 'Knitwear & Sweaters', name: 'Knitwear & Sweaters', slug: 'knitwear-sweaters' },
+      { id: 'Other', name: 'Other', slug: 'other' },
     ],
-    sizeOptions: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'W28 L30', 'W30 L30', 'W32 L30', 'W34 L32', 'OS'],
+    sizeOptions: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL','OS'],
   },
   {
     id: 'Accessories',
@@ -30,23 +31,24 @@ export const TAXONOMY = [
       { id: 'Bags & Backpacks', name: 'Bags & Backpacks', slug: 'bags-backpacks' },
       { id: 'Footwear & Sneakers', name: 'Footwear & Sneakers', slug: 'footwear-sneakers' },
       { id: 'Headwear', name: 'Headwear', slug: 'headwear' },
-      { id: 'Belts & Jewelry', name: 'Belts & Jewelry', slug: 'belts-jewelry' },
+      { id: 'Jewelry', name: 'Jewelry', slug: 'jewelry' },
       { id: 'Eyewear', name: 'Eyewear', slug: 'eyewear' },
+      { id: 'Other', name: 'Other', slug: 'other' },
     ],
     sizeOptions: ['US 7', 'US 8', 'US 9', 'US 10', 'US 11', 'US 12', 'Small', 'Medium', 'Large', 'OS'],
   },
   {
     id: 'Tech & Retro Electronics',
-    name: 'Tech & Retro Electronics',
-    shortName: 'Tech & Retro',
+    name: 'Tech & Electronics',
+    shortName: 'Tech & Electronics',
     slug: 'tech-retro-electronics',
     iconName: 'Camera',
-    description: 'CCD digicams, 35mm point & shoot cameras, vinyl turntables, and retro gaming handhelds',
+    description: 'CCD digicams, gaming handhelds, vintage electronics, and audio grails',
     subcategories: [
-      { id: 'Digicams & 35mm Film', name: 'Digicams & 35mm Film', slug: 'digicams-35mm-film' },
-      { id: 'Audio & Vinyl', name: 'Audio & Vinyl', slug: 'audio-vinyl' },
-      { id: 'Gaming Handhelds', name: 'Gaming Handhelds', slug: 'gaming-handhelds' },
-      { id: 'Retro Computing & Peripherals', name: 'Retro Computing & Peripherals', slug: 'retro-computing-peripherals' },
+      { id: 'Digicams', name: 'Digicams', slug: 'digicams' },
+      { id: 'Gaming', name: 'Gaming', slug: 'gaming' },
+      { id: 'Electronics', name: 'Electronics', slug: 'electronics' },
+      { id: 'Other', name: 'Other', slug: 'other' },
     ],
     sizeOptions: ['Compact', 'Pocket', 'Handheld', 'Standard Desktop', 'Modular', 'OS'],
   },
@@ -104,11 +106,14 @@ export const FOUR_POINT_OPERATIONAL_CHECKLIST = [
 
 export function getCategoryById(categoryId) {
   if (!categoryId || categoryId === 'ALL') return null;
+  const lower = categoryId.toLowerCase();
   return TAXONOMY.find(
     (c) =>
-      c.id.toLowerCase() === categoryId.toLowerCase() ||
-      c.shortName.toLowerCase() === categoryId.toLowerCase() ||
-      c.slug.toLowerCase() === categoryId.toLowerCase()
+      c.id.toLowerCase() === lower ||
+      c.name.toLowerCase() === lower ||
+      c.shortName.toLowerCase() === lower ||
+      c.slug.toLowerCase() === lower ||
+      (c.id.includes('Tech') && lower.includes('tech'))
   );
 }
 
@@ -119,9 +124,11 @@ export function getSubcategories(categoryId) {
 
 export function isTechCategory(categoryName) {
   if (!categoryName) return false;
+  const lower = categoryName.toLowerCase();
   return (
     categoryName === 'Tech & Retro Electronics' ||
-    categoryName.toLowerCase().includes('tech') ||
-    categoryName.toLowerCase().includes('electronics')
+    categoryName === 'Tech & Electronics' ||
+    lower.includes('tech') ||
+    lower.includes('electronics')
   );
 }

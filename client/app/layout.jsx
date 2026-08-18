@@ -30,6 +30,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`dark scroll-smooth ${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <body className="bg-street-black text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-neon-lime selection:text-black font-sans">

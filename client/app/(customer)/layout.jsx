@@ -29,9 +29,11 @@ export default function CustomerLayout({ children }) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('unretail_token');
       localStorage.removeItem('unretail_user');
+      window.location.href = '/login';
+    } else {
+      setUser(null);
+      router.push('/login');
     }
-    setUser(null);
-    router.push('/login');
   };
 
   const navItems = [
@@ -83,7 +85,7 @@ export default function CustomerLayout({ children }) {
 
             {user ? (
               <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
-                <div className="flex items-center gap-2.5 bg-zinc-900/60 border border-zinc-800/80 rounded-full py-1 px-2.5">
+                <div className="flex items-center gap-2 bg-zinc-900/60 border border-zinc-800/80 rounded-full py-1 px-2.5">
                   <img
                     src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                     alt={user.fullName}
@@ -95,29 +97,50 @@ export default function CustomerLayout({ children }) {
                 </div>
                 <button
                   onClick={handleLogout}
-                  title="Logout"
-                  className="text-zinc-500 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-zinc-900"
+                  className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 hover:border-rose-500/40 text-zinc-300 hover:text-rose-400 px-3 py-1.5 rounded-xl font-semibold text-xs transition-all shadow-sm active:scale-95 group cursor-pointer"
+                  title="Log Out of Customer Session"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5 text-zinc-400 group-hover:text-rose-400 transition-colors" />
+                  <span>Log Out</span>
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="bg-neon-lime text-black font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-white transition-all shadow-sm active:scale-95"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2 pl-3 border-l border-zinc-800">
+                <Link
+                  href="/login"
+                  className="bg-neon-lime text-black font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-white transition-all shadow-sm active:scale-95"
+                >
+                  Sign In
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 hover:border-rose-500/40 text-zinc-400 hover:text-rose-400 px-3 py-1.5 rounded-xl font-medium text-xs transition-all cursor-pointer"
+                  title="Log Out / Reset"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Log Out</span>
+                </button>
+              </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-zinc-300 hover:text-white p-2 rounded-lg hover:bg-zinc-800"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile Actions */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 text-zinc-300 hover:text-rose-400 px-2.5 py-1.5 rounded-xl font-semibold text-xs transition-colors"
+              title="Log Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="text-zinc-300 hover:text-white p-2 rounded-lg hover:bg-zinc-800"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </header>
 

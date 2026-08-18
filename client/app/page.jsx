@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
 import { formatCurrency, formatCondition } from '@/lib/utils';
-import { Sparkles, ArrowRight, Store, ShieldCheck, Tag, Zap, Search, ShoppingBag, Flame, Layers, Play, Pause, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, Store, ShieldCheck, Tag, Zap, Search, ShoppingBag, Flame, Layers, Play, Pause, ChevronLeft, ChevronRight, CheckCircle2, LogOut } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 export default function LandingPage() {
@@ -12,6 +12,28 @@ export default function LandingPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [shops, setShops] = useState([]);
   const [items, setItems] = useState([]);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('unretail_user');
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('unretail_token');
+      localStorage.removeItem('unretail_user');
+      window.location.href = '/login';
+    } else {
+      setUser(null);
+    }
+  };
 
   const heroSlides = [
     {
@@ -192,12 +214,35 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(204,255,0,0.3)] active:scale-95"
-            >
-              Sign In / Sign Up
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 bg-zinc-900/60 border border-zinc-800/80 rounded-full py-1 px-2.5">
+                  <img
+                    src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                    alt={user.fullName}
+                    className="w-6 h-6 rounded-full border border-zinc-700 object-cover"
+                  />
+                  <span className="text-xs font-semibold text-zinc-200 max-w-[120px] truncate">
+                    {user.fullName}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 hover:border-rose-500/40 text-zinc-300 hover:text-rose-400 px-3 py-1.5 rounded-xl font-semibold text-xs transition-all shadow-sm active:scale-95 group cursor-pointer"
+                  title="Log Out"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-zinc-400 group-hover:text-rose-400 transition-colors" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(204,255,0,0.3)] active:scale-95"
+              >
+                Sign In / Sign Up
+              </Link>
+            )}
           </div>
         </div>
       </header>

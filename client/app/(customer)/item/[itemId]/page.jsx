@@ -206,7 +206,7 @@ export default function ProductDetailPage(props) {
       const storedUser = typeof window !== 'undefined' ? localStorage.getItem('unretail_user') : null;
       const user = storedUser ? JSON.parse(storedUser) : null;
 
-      const res = await apiClient.post('/payments/create-order', {
+      const res = await apiClient.post('/orders/create-intent', {
         itemId: item.id,
         shopId: item.shopId || item.shop?.id || 'shop-1',
         buyerId: user?.id || 'guest_collector',

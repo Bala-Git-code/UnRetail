@@ -13,6 +13,7 @@ import {
 } from '@/lib/taxonomy';
 import {
   Camera,
+  Upload,
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
   Layers,
   Sparkles,
   X,
+  Info,
   ShieldCheck,
   Cpu,
   Lock,
@@ -38,6 +40,7 @@ export default function NewItemListingPage() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Apparel');
   const [subcategory, setSubcategory] = useState('Tops & Graphic Tees');
+  const [brand, setBrand] = useState('');
   const [size, setSize] = useState('L');
   const [era, setEra] = useState('90s');
   const [condition, setCondition] = useState('GENTLY_USED');
@@ -140,6 +143,8 @@ export default function NewItemListingPage() {
       setKnownDefectsReported(preset.knownDefectsReported ?? false);
       setKnownDefectsDesc(preset.knownDefectsDesc || '');
       setSerialNumberImei(preset.serialNumberImei || '');
+    } else {
+      setSerialNumberImei(preset.serialNumberImei || '');
     }
     setValidationErrors({});
   };
@@ -190,16 +195,17 @@ export default function NewItemListingPage() {
 
     try {
       const payload = {
-        shopId: 'shop-1',
         title: title.trim(),
         description: description.trim(),
         price: parseFloat(price),
         category,
         subcategory,
+        brand: brand || undefined,
         size,
         era,
         condition: isTech ? 'LIKE_NEW' : condition,
         images: images.length > 0 ? images : ['/images/denim_vintage.png'],
+        ...(serialNumberImei.trim() && { serialNumberImei: serialNumberImei.trim() }),
         // Tech Anti-Fraud verification payload
         ...(isTech && {
           techConditionGrade,
@@ -208,7 +214,6 @@ export default function NewItemListingPage() {
           portChargingTested,
           knownDefectsReported,
           knownDefectsDesc: knownDefectsDesc.trim(),
-          serialNumberImei: serialNumberImei.trim(),
         }),
       };
 
@@ -729,6 +734,44 @@ export default function NewItemListingPage() {
                 <span className="text-rose-400 text-[11px] block">{validationErrors.price}</span>
               )}
             </div>
+          </div>
+
+          {/* Brand, Subcategory, Serial Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Brand (Optional)</label>
+              <input
+                type="text"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                placeholder="e.g. Levi's, Harley"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Subcategory (Optional)</label>
+              <input
+                type="text"
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                placeholder="e.g. 501, Leather Bomber"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+              />
+            </div>
+
+            {!isTech && (
+              <div className="space-y-1.5">
+                <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Serial Number / Verification ID</label>
+                <input
+                  type="text"
+                  value={serialNumberImei}
+                  onChange={(e) => setSerialNumberImei(e.target.value)}
+                  placeholder="e.g. SN-99824"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           {/* Description */}

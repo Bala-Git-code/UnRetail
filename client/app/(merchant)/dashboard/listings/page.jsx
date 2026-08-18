@@ -35,9 +35,13 @@ export default function MerchantListingsPage() {
   const fetchMerchantItems = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/items');
-      if (res.data?.data) {
-        setItems(res.data.data);
+      const shopRes = await apiClient.get('/merchant/my-shop');
+      if (shopRes.data?.success && shopRes.data?.data) {
+        const shopId = shopRes.data.data.id;
+        const res = await apiClient.get(`/items?shopId=${shopId}&status=ALL`);
+        if (res.data?.data) {
+          setItems(res.data.data);
+        }
       }
     } catch (err) {
       console.warn('Listings fetch fallback:', err);
@@ -48,11 +52,13 @@ export default function MerchantListingsPage() {
 
   // 1-Tap Mark Sold In-Store status toggle
   const handleToggleSoldStatus = async (item) => {
-    const newStatus = item.status === 'SOLD' ? 'AVAILABLE' : 'SOLD';
+    if (item.status === 'SOLD') return; // Cannot toggle online sold items
+
+    const newStatus = item.status === 'SOLD_OFFLINE' ? 'AVAILABLE' : 'SOLD_OFFLINE';
     setUpdatingId(item.id);
 
     try {
-      const res = await apiClient.patch(`/items/${item.id}`, { status: newStatus });
+      const res = await apiClient.patch(`/items/${item.id}/mark-sold`, { status: newStatus });
       if (res.data?.success) {
         setItems((prev) =>
           prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i))
@@ -135,7 +141,8 @@ export default function MerchantListingsPage() {
           <div className="divide-y divide-zinc-800/70">
             {filteredItems.map((item) => {
               const img = item.images?.[0] || '/images/denim_vintage.png';
-              const isSold = item.status === 'SOLD';
+              const isSold = item.status === 'SOLD' || item.status === 'SOLD_OFFLINE';
+              const isSoldOnline = item.status === 'SOLD';
               const isTech = isTechCategory(item.category);
 
               return (
@@ -156,11 +163,11 @@ export default function MerchantListingsPage() {
                       />
                       {isSold && (
                         <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-bold text-rose-400 uppercase tracking-wider backdrop-blur-xs">
-                          SOLD
+                          {item.status === 'SOLD' ? 'SOLD ONLINE' : 'SOLD IN-STORE'}
                         </div>
                       )}
                     </div>
-
+ 
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
@@ -200,9 +207,11 @@ export default function MerchantListingsPage() {
                   <div className="flex items-center gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/80">
                     <button
                       onClick={() => handleToggleSoldStatus(item)}
-                      disabled={updatingId === item.id}
+                      disabled={updatingId === item.id || isSoldOnline}
                       className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
-                        isSold
+                        isSoldOnline
+                          ? 'bg-zinc-950 text-zinc-600 border border-zinc-900 cursor-not-allowed'
+                          : item.status === 'SOLD_OFFLINE'
                           ? 'bg-zinc-900 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500 hover:text-black'
                           : 'bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500 hover:text-white'
                       }`}
@@ -211,7 +220,9 @@ export default function MerchantListingsPage() {
                       <span>
                         {updatingId === item.id
                           ? 'Syncing...'
-                          : isSold
+                          : isSoldOnline
+                          ? 'Sold Online'
+                          : item.status === 'SOLD_OFFLINE'
                           ? 'Relist Available'
                           : '1-Tap Mark Sold'}
                       </span>

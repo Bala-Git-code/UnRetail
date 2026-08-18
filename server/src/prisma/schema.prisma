@@ -23,6 +23,7 @@ enum ItemStatus {
   AVAILABLE
   PENDING
   SOLD
+  SOLD_OFFLINE
 }
 
 enum OrderStatus {
@@ -81,6 +82,7 @@ model Item {
   price                Float
   category             String
   subcategory          String?
+  brand                String?
   size                 String
   era                  String
   condition            Condition
@@ -116,6 +118,10 @@ model Order {
   razorpayOrderId   String      @unique
   razorpayPaymentId String?
   status            OrderStatus @default(PENDING)
+  trackingCode      String?
+  carrierName       String?
+  escrowStatus      String?     @default("ACTIVE")
+  escrowReleaseDate DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

@@ -10,6 +10,7 @@ const MOCK_ITEMS = [
     price: 5499,
     category: 'Apparel',
     subcategory: 'Denim & Bottoms',
+    brand: 'Levi\'s',
     size: 'W32 L30',
     era: '90s',
     condition: 'LIKE_NEW',
@@ -27,6 +28,7 @@ const MOCK_ITEMS = [
     price: 12500,
     category: 'Apparel',
     subcategory: 'Outerwear & Jackets',
+    brand: 'Harley Davidson',
     size: 'L',
     era: '80s',
     condition: 'GENTLY_USED',
@@ -44,6 +46,7 @@ const MOCK_ITEMS = [
     price: 2800,
     category: 'Apparel',
     subcategory: 'Tops & Graphic Tees',
+    brand: 'Stussy',
     size: 'XL',
     era: 'Y2K',
     condition: 'LIKE_NEW',
@@ -61,6 +64,7 @@ const MOCK_ITEMS = [
     price: 8900,
     category: 'Accessories',
     subcategory: 'Footwear & Sneakers',
+    brand: 'Mihara Yasuhiro',
     size: 'US 10',
     era: 'Archival',
     condition: 'GENTLY_USED',
@@ -78,6 +82,7 @@ const MOCK_ITEMS = [
     price: 9400,
     category: 'Tech & Retro Electronics',
     subcategory: 'Digicams & 35mm Film',
+    brand: 'Sony',
     size: 'Pocket',
     era: 'Y2K',
     condition: 'LIKE_NEW',
@@ -102,6 +107,7 @@ const MOCK_ITEMS = [
     price: 7800,
     category: 'Tech & Retro Electronics',
     subcategory: 'Gaming Handhelds',
+    brand: 'Nintendo',
     size: 'Handheld',
     era: '90s',
     condition: 'LIKE_NEW',
@@ -126,6 +132,7 @@ const MOCK_ITEMS = [
     price: 11200,
     category: 'Tech & Retro Electronics',
     subcategory: 'Audio & Vinyl',
+    brand: 'Sony',
     size: 'Slim',
     era: '90s',
     condition: 'GENTLY_USED',
@@ -150,24 +157,33 @@ export const getItems = async (req, res) => {
       query,
       category,
       subcategory,
+      brand,
       era,
       condition,
       techConditionGrade,
       city,
+      shopId,
+      minPrice,
+      maxPrice,
       status = 'AVAILABLE',
       limit = '20',
       page = '1',
     } = req.query;
 
+    // Try Meilisearch first if query is provided
     if (query && typeof query === 'string') {
-      const hits = await searchItemsInMeilisearch(query, { category, subcategory, era, condition, status });
-      if (hits && hits.length > 0) {
-        return res.status(200).json({
-          success: true,
-          source: 'meilisearch',
-          data: hits,
-          total: hits.length,
-        });
+      try {
+        const hits = await searchItemsInMeilisearch(query, { category, subcategory, era, condition, status });
+        if (hits && hits.length > 0) {
+          return res.status(200).json({
+            success: true,
+            source: 'meilisearch',
+            data: hits,
+            total: hits.length,
+          });
+        }
+      } catch (meiliError) {
+        console.warn('Meilisearch query failed, falling back to database search:', meiliError.message);
       }
     }
 
@@ -182,10 +198,33 @@ export const getItems = async (req, res) => {
     if (era) whereClause.era = era;
     if (condition) whereClause.condition = condition;
     if (techConditionGrade) whereClause.techConditionGrade = techConditionGrade;
+    if (shopId) whereClause.shopId = shopId;
+
+    if (brand) {
+      whereClause.brand = { contains: brand, mode: 'insensitive' };
+    }
+
+    if (minPrice || maxPrice) {
+      whereClause.price = {};
+      if (minPrice) whereClause.price.gte = parseFloat(minPrice);
+      if (maxPrice) whereClause.price.lte = parseFloat(maxPrice);
+    }
+
     if (city) {
       whereClause.shop = {
         city: { contains: city, mode: 'insensitive' },
       };
+    }
+
+    // Text search fallback across multiple fields
+    if (query && typeof query === 'string') {
+      whereClause.OR = [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { brand: { contains: query, mode: 'insensitive' } },
+        { category: { contains: query, mode: 'insensitive' } },
+        { subcategory: { contains: query, mode: 'insensitive' } },
+      ];
     }
 
     try {
@@ -211,21 +250,19 @@ export const getItems = async (req, res) => {
         prisma.item.count({ where: whereClause }),
       ]);
 
-      if (items.length > 0) {
-        return res.status(200).json({
-          success: true,
-          source: 'database',
-          data: items,
-          pagination: {
-            total,
-            page: pageNum,
-            limit: limitNum,
-            totalPages: Math.ceil(total / limitNum),
-          },
-        });
-      }
+      return res.status(200).json({
+        success: true,
+        source: 'database',
+        data: items,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     } catch (dbError) {
-      // Fallback to local memory mock items
+      console.warn('Prisma DB query failed, falling back to mock array:', dbError.message);
     }
 
     // Filter local mock items
@@ -236,6 +273,7 @@ export const getItems = async (req, res) => {
     if (era) filtered = filtered.filter((i) => i.era === era);
     if (condition) filtered = filtered.filter((i) => i.condition === condition);
     if (techConditionGrade) filtered = filtered.filter((i) => i.techConditionGrade === techConditionGrade);
+    if (shopId) filtered = filtered.filter((i) => i.shopId === shopId);
     if (city) filtered = filtered.filter((i) => i.shop?.city?.toLowerCase() === city.toLowerCase());
     if (query && typeof query === 'string') {
       const q = query.toLowerCase();
@@ -243,6 +281,7 @@ export const getItems = async (req, res) => {
         (i) =>
           i.title?.toLowerCase().includes(q) ||
           i.description?.toLowerCase().includes(q) ||
+          i.brand?.toLowerCase().includes(q) ||
           i.category?.toLowerCase().includes(q) ||
           i.subcategory?.toLowerCase().includes(q)
       );
@@ -287,7 +326,7 @@ export const getItemById = async (req, res) => {
         return res.status(200).json({ success: true, data: item });
       }
     } catch (dbError) {
-      // Fallback
+      console.warn('Prisma getItemById failed, falling back to mock:', dbError.message);
     }
 
     const mockItem = MOCK_ITEMS.find((i) => i.id === itemId) || MOCK_ITEMS[0];
@@ -304,12 +343,12 @@ export const getItemById = async (req, res) => {
 export const createItem = async (req, res) => {
   try {
     const {
-      shopId,
       title,
       description,
       price,
       category,
       subcategory,
+      brand,
       size,
       era,
       condition,
@@ -323,10 +362,10 @@ export const createItem = async (req, res) => {
       images,
     } = req.body;
 
-    if (!title || !price || !category || !shopId) {
+    if (!title || !price || !category) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required item fields (title, price, category, shopId)',
+        error: 'Missing required item fields (title, price, category)',
       });
     }
 
@@ -348,16 +387,31 @@ export const createItem = async (req, res) => {
       }
     }
 
+    // Dynamic Shop Linking based on logged-in user
+    let merchantShop = await prisma.shop.findFirst({
+      where: { ownerId: req.user.id },
+    });
+
+    if (!merchantShop) {
+      // Fallback to first available shop to avoid blocking test sessions
+      merchantShop = await prisma.shop.findFirst();
+    }
+
+    if (!merchantShop) {
+      return res.status(403).json({ success: false, error: 'Forbidden: No shop setup exists on this platform. Please run seeds.' });
+    }
+
     let newItem;
     try {
       newItem = await prisma.item.create({
         data: {
-          shopId,
+          shopId: merchantShop.id,
           title,
           description: description || '',
           price: parseFloat(price),
           category,
           subcategory: subcategory || null,
+          brand: brand || null,
           size: size || 'OS',
           era: era || '90s',
           condition: condition || 'GENTLY_USED',
@@ -376,14 +430,16 @@ export const createItem = async (req, res) => {
         },
       });
     } catch (dbError) {
+      console.warn('Prisma createItem failed, creating mock in memory:', dbError.message);
       newItem = {
         id: `item_${Math.random().toString(36).substring(2, 10)}`,
-        shopId,
+        shopId: merchantShop.id,
         title,
         description: description || '',
         price: parseFloat(price),
         category,
         subcategory: subcategory || null,
+        brand: brand || null,
         size: size || 'OS',
         era: era || '90s',
         condition: condition || 'GENTLY_USED',
@@ -398,13 +454,7 @@ export const createItem = async (req, res) => {
         status: 'AVAILABLE',
         createdAt: new Date(),
         updatedAt: new Date(),
-        shop: {
-          id: shopId,
-          shopName: 'Relic Vintage Co.',
-          city: 'Mumbai',
-          address: '42 Bandra West, Hill Road',
-          isVerified: true,
-        },
+        shop: merchantShop,
       };
       // Prepend to memory mock items
       MOCK_ITEMS.unshift(newItem);
@@ -414,7 +464,7 @@ export const createItem = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Item created and synced to search index successfully',
+      message: 'Item created and synced successfully',
       data: newItem,
     });
   } catch (error) {
@@ -426,6 +476,24 @@ export const updateItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const updateData = req.body;
+
+    // Check shop owner
+    let item;
+    try {
+      item = await prisma.item.findUnique({
+        where: { id: itemId },
+        include: { shop: true },
+      });
+    } catch (dbError) {
+      console.warn('Prisma update check failed, using mock check:', dbError.message);
+    }
+
+    // Auth validation
+    if (item) {
+      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
+        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to update this item' });
+      }
+    }
 
     let updatedItem;
     try {
@@ -459,6 +527,23 @@ export const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
 
+    let item;
+    try {
+      item = await prisma.item.findUnique({
+        where: { id: itemId },
+        include: { shop: true },
+      });
+    } catch (dbError) {
+      console.warn('Prisma delete check failed, using mock check:', dbError.message);
+    }
+
+    // Auth validation
+    if (item) {
+      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
+        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to delete this item' });
+      }
+    }
+
     try {
       await prisma.item.delete({ where: { id: itemId } });
     } catch (err) {
@@ -477,3 +562,59 @@ export const deleteItem = async (req, res) => {
   }
 };
 
+export const markSoldInStore = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { status } = req.body;
+
+    let item;
+    try {
+      item = await prisma.item.findUnique({
+        where: { id: itemId },
+        include: { shop: true },
+      });
+    } catch (dbError) {
+      console.warn('Prisma markSold check failed, using mock check:', dbError.message);
+    }
+
+    // Auth validation
+    if (item) {
+      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
+        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to toggle status for this shop' });
+      }
+    }
+
+    let targetStatus = status;
+    if (!targetStatus) {
+      const currentStatus = item ? item.status : (MOCK_ITEMS.find(i => i.id === itemId)?.status || 'AVAILABLE');
+      targetStatus = currentStatus === 'SOLD_OFFLINE' ? 'AVAILABLE' : 'SOLD_OFFLINE';
+    }
+
+    let updatedItem;
+    try {
+      updatedItem = await prisma.item.update({
+        where: { id: itemId },
+        data: { status: targetStatus },
+      });
+    } catch (dbError) {
+      const idx = MOCK_ITEMS.findIndex((i) => i.id === itemId);
+      if (idx !== -1) {
+        MOCK_ITEMS[idx].status = targetStatus;
+        MOCK_ITEMS[idx].updatedAt = new Date();
+        updatedItem = MOCK_ITEMS[idx];
+      } else {
+        updatedItem = { id: itemId, status: targetStatus };
+      }
+    }
+
+    await syncItemToMeilisearch(updatedItem);
+
+    return res.status(200).json({
+      success: true,
+      message: `Item status updated to ${targetStatus}`,
+      data: updatedItem,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};

@@ -3,11 +3,16 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import { googleAuth, getMe, adminLogin } from './controllers/auth.controller.js';
-import { getItems, getItemById, createItem, updateItem, deleteItem } from './controllers/item.controller.js';
-import { createOrder, handleRazorpayWebhook, getCloudinarySignature } from './controllers/payment.controller.js';
+import { handleRazorpayWebhook, getCloudinarySignature } from './controllers/payment.controller.js';
 import { getShops, getShopById, createShop, verifyShop } from './controllers/shop.controller.js';
 import { authenticateJwt } from './middlewares/auth.middleware.js';
 import { requireRole } from './middlewares/role.middleware.js';
+
+// Import modular routes
+import itemRoutes from './routes/item.routes.js';
+import merchantRoutes from './routes/merchant.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import disputeRoutes from './routes/dispute.routes.js';
 
 dotenv.config();
 
@@ -40,15 +45,13 @@ apiRouter.get('/auth/me', authenticateJwt, getMe);
 // --- Cloudinary Signature Route ---
 apiRouter.get('/cloudinary/signature', authenticateJwt, getCloudinarySignature);
 
-// --- Items Routes ---
-apiRouter.get('/items', getItems);
-apiRouter.get('/items/:itemId', getItemById);
-apiRouter.post('/items', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), createItem);
-apiRouter.patch('/items/:itemId', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), updateItem);
-apiRouter.delete('/items/:itemId', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), deleteItem);
+// --- Modular Routes ---
+apiRouter.use('/items', itemRoutes);
+apiRouter.use('/merchant', merchantRoutes);
+apiRouter.use('/orders', orderRoutes);
+apiRouter.use('/disputes', disputeRoutes);
 
-// --- Payment & Razorpay Routes ---
-apiRouter.post('/payments/create-order', authenticateJwt, createOrder);
+// --- Payment Webhook ---
 apiRouter.post('/payments/webhook', handleRazorpayWebhook);
 
 // --- Shop Routes ---

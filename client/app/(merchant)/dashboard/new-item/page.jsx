@@ -143,6 +143,8 @@ export default function NewItemListingPage() {
       setKnownDefectsReported(preset.knownDefectsReported ?? false);
       setKnownDefectsDesc(preset.knownDefectsDesc || '');
       setSerialNumberImei(preset.serialNumberImei || '');
+    } else {
+      setSerialNumberImei(preset.serialNumberImei || '');
     }
     setValidationErrors({});
   };
@@ -203,6 +205,7 @@ export default function NewItemListingPage() {
         era,
         condition: isTech ? 'LIKE_NEW' : condition,
         images: images.length > 0 ? images : ['/images/denim_vintage.png'],
+        ...(serialNumberImei.trim() && { serialNumberImei: serialNumberImei.trim() }),
         // Tech Anti-Fraud verification payload
         ...(isTech && {
           techConditionGrade,
@@ -211,7 +214,6 @@ export default function NewItemListingPage() {
           portChargingTested,
           knownDefectsReported,
           knownDefectsDesc: knownDefectsDesc.trim(),
-          serialNumberImei: serialNumberImei.trim(),
         }),
       };
 
@@ -758,16 +760,18 @@ export default function NewItemListingPage() {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Serial Number / Verification ID</label>
-              <input
-                type="text"
-                value={serialNumber}
-                onChange={(e) => setSerialNumber(e.target.value)}
-                placeholder="e.g. SN-99824"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
-              />
-            </div>
+            {!isTech && (
+              <div className="space-y-1.5">
+                <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Serial Number / Verification ID</label>
+                <input
+                  type="text"
+                  value={serialNumberImei}
+                  onChange={(e) => setSerialNumberImei(e.target.value)}
+                  placeholder="e.g. SN-99824"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           {/* Description */}

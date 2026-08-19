@@ -102,6 +102,17 @@ export const googleAuth = async (req, res) => {
         fullName: user.fullName,
         avatarUrl: user.avatarUrl,
         role: user.role,
+        phoneNumber: user.phoneNumber || null,
+        address: user.address || null,
+        city: user.city || null,
+        shopName: user.shopName || null,
+        idProofType: user.idProofType || null,
+        idProofNumber: user.idProofNumber || null,
+        idProofUrl: user.idProofUrl || null,
+        idPhotoUrl: user.idPhotoUrl || null,
+        merchantStatus: user.merchantStatus || (user.role === 'ADMIN' ? 'APPROVED' : 'UNSUBMITTED'),
+        rejectionReason: user.rejectionReason || null,
+        approvedAt: user.approvedAt || null,
       },
     });
   } catch (error) {
@@ -128,7 +139,10 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(200).json({
         success: true,
-        user: req.user,
+        user: {
+          ...req.user,
+          merchantStatus: req.user.role === 'ADMIN' ? 'APPROVED' : 'UNSUBMITTED',
+        },
       });
     }
 
@@ -140,6 +154,17 @@ export const getMe = async (req, res) => {
         fullName: user.fullName,
         avatarUrl: user.avatarUrl,
         role: user.role,
+        phoneNumber: user.phoneNumber || null,
+        address: user.address || null,
+        city: user.city || null,
+        shopName: user.shopName || null,
+        idProofType: user.idProofType || null,
+        idProofNumber: user.idProofNumber || null,
+        idProofUrl: user.idProofUrl || null,
+        idPhotoUrl: user.idPhotoUrl || null,
+        merchantStatus: user.merchantStatus || (user.role === 'ADMIN' ? 'APPROVED' : 'UNSUBMITTED'),
+        rejectionReason: user.rejectionReason || null,
+        approvedAt: user.approvedAt || null,
       },
     });
   } catch (error) {

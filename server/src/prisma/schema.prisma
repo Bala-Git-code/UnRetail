@@ -39,14 +39,35 @@ enum DisputeStatus {
   REFUNDED
 }
 
+enum MerchantStatus {
+  UNSUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  fullName  String
-  avatarUrl String?
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String         @id @default(uuid())
+  email           String         @unique
+  fullName        String
+  avatarUrl       String?
+  role            Role           @default(CUSTOMER)
+  
+  // Merchant KYC & Verification Details
+  phoneNumber     String?
+  address         String?
+  city            String?
+  shopName        String?
+  idProofType     String?        // e.g. "Aadhaar Card", "PAN Card", "Voter ID", "Indian Passport"
+  idProofNumber   String?
+  idProofUrl      String?        // Cloudinary Secure URL for Indian citizen ID document
+  idPhotoUrl      String?        // Cloudinary Secure URL for identification photo / selfie
+  merchantStatus  MerchantStatus @default(UNSUBMITTED)
+  rejectionReason String?
+  approvedAt      DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   shops    Shop[]
   orders   Order[]

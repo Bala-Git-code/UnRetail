@@ -27,4 +27,33 @@ export const generateCloudinarySignature = (folder = 'unretail-listings') => {
   };
 };
 
+export const uploadToCloudinary = async (fileData, folder = 'unretail-kyc-docs') => {
+  try {
+    if (!fileData) {
+      throw new Error('No file data provided for Cloudinary upload');
+    }
+
+    // If fileData is already a valid http(s) URL and not a data URI, we can return or re-upload it
+    if (typeof fileData === 'string' && fileData.startsWith('http') && !fileData.includes('cloudinary')) {
+      const result = await cloudinary.uploader.upload(fileData, {
+        folder,
+        resource_type: 'auto',
+      });
+      return result.secure_url || result.url;
+    }
+
+    // Upload base64 / data URI
+    const result = await cloudinary.uploader.upload(fileData, {
+      folder,
+      resource_type: 'auto',
+    });
+
+    return result.secure_url || result.url;
+  } catch (error) {
+    console.warn('Cloudinary server-side upload fallback:', error.message || error);
+    // If Cloudinary upload fails or uses mock keys, return the fileData if it's already a URL/DataURI
+    return fileData;
+  }
+};
+
 export default cloudinary;

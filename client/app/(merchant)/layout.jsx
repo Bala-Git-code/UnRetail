@@ -60,8 +60,16 @@ export default function MerchantLayout({ children }) {
               <Store className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-white text-xs truncate">Relic Vintage Co.</div>
-              <div className="text-[11px] text-zinc-500 font-medium">Mumbai • Verified</div>
+              <div className="font-bold text-white text-xs truncate">
+                {user?.shopName || 'Boutique Store'}
+              </div>
+              <div className="text-[11px] text-zinc-400 font-medium flex items-center gap-1">
+                <span>{user?.city || 'India'}</span>
+                <span>•</span>
+                <span className={user?.merchantStatus === 'APPROVED' || user?.role === 'ADMIN' ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                  {user?.merchantStatus === 'APPROVED' || user?.role === 'ADMIN' ? 'Verified' : 'Under Review'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -114,14 +122,21 @@ export default function MerchantLayout({ children }) {
           </div>
 
           <div className="hidden md:flex items-center gap-2 text-xs text-zinc-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Real-Time Storefront Sync: <strong className="text-emerald-400">ACTIVE</strong></span>
+            <span className={`w-2 h-2 rounded-full ${user?.merchantStatus === 'APPROVED' || user?.role === 'ADMIN' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+            <span>
+              Storefront Status:{' '}
+              <strong className={user?.merchantStatus === 'APPROVED' || user?.role === 'ADMIN' ? 'text-emerald-400' : 'text-amber-400'}>
+                {user?.merchantStatus === 'APPROVED' || user?.role === 'ADMIN' ? 'ACTIVE & VERIFIED' : 'PENDING ADMIN APPROVAL'}
+              </strong>
+            </span>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-bold text-white">{user?.fullName || 'Executive Platform Admin'}</div>
-              <div className="text-[11px] text-zinc-500 font-medium">Relic Vintage Co. (Mumbai)</div>
+              <div className="text-xs font-bold text-white">{user?.fullName || 'Boutique Merchant'}</div>
+              <div className="text-[11px] text-zinc-500 font-medium">
+                {user?.shopName || 'Boutique Store'} ({user?.city || 'India'})
+              </div>
             </div>
             <img
               src={user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}

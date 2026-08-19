@@ -119,7 +119,7 @@ export default function MerchantOnboardingModal({ isOpen, onClose, onVerificatio
   // Handle uploading media to storage service
   const uploadFileToStorage = async (file, folder = 'unretail-kyc-docs') => {
     try {
-      const sigRes = await apiClient.get('/cloudinary/signature');
+      const sigRes = await apiClient.get(`/cloudinary/signature?folder=${folder}`);
       if (sigRes?.data?.data) {
         const { timestamp, signature, apiKey, cloudName, folder: sigFolder } = sigRes.data.data;
 

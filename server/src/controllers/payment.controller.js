@@ -124,9 +124,10 @@ export const handleRazorpayWebhook = async (req, res) => {
   }
 };
 
-export const getCloudinarySignature = async (_req, res) => {
+export const getCloudinarySignature = async (req, res) => {
   try {
-    const signaturePayload = generateCloudinarySignature('unretail-listings');
+    const folder = req.query.folder || 'unretail-listings';
+    const signaturePayload = generateCloudinarySignature(folder);
     return res.status(200).json({
       success: true,
       data: signaturePayload,

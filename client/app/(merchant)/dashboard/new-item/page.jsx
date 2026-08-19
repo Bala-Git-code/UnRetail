@@ -135,7 +135,7 @@ export default function NewItemListingPage() {
     setErrorMsg(null);
 
     try {
-      const sigRes = await apiClient.get('/cloudinary/signature');
+      const sigRes = await apiClient.get('/cloudinary/signature?folder=unretail-listings');
       const { timestamp, signature, apiKey, cloudName, folder } = sigRes.data.data;
 
       const file = files[0];

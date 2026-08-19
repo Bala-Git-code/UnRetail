@@ -166,14 +166,14 @@ export default function LoginPage() {
           {/* Editorial Background Image */}
           <div className="absolute inset-0 z-0">
             <Image
-              src="/images/auth_editorial.jpg"
-              alt="UnRetail Haute Archival Fashion"
+              src="/images/thrift_store_sign.jpg"
+              alt="UnRetail Thrift Store & Archival Exchange"
               fill
               priority
-              className="object-cover object-center filter brightness-[0.82] contrast-110 hover:scale-105 transition-transform duration-1000 ease-out"
+              className="object-cover object-center filter brightness-[0.92] contrast-105 hover:scale-105 transition-transform duration-1000 ease-out"
             />
             {/* Cinematic Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-street-black via-street-black/25 to-transparent opacity-90" />
+            <div className="absolute inset-0 bg-gradient-to-t from-street-black via-street-black/30 to-transparent opacity-90" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-street-black/60 hidden lg:block" />
           </div>
 

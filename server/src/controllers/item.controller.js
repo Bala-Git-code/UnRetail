@@ -387,6 +387,25 @@ export const createItem = async (req, res) => {
       }
     }
 
+    // Check Merchant Approval Gating (Only approved merchants or admins can post products)
+    if (req.user?.role !== 'ADMIN') {
+      try {
+        const currentUser = await prisma.user.findUnique({
+          where: { id: req.user.id },
+        });
+
+        if (currentUser && currentUser.merchantStatus && currentUser.merchantStatus !== 'APPROVED') {
+          return res.status(403).json({
+            success: false,
+            error: 'Your merchant account is pending admin approval. You can only post items for selling after your verification is approved by the admin.',
+            merchantStatus: currentUser.merchantStatus,
+          });
+        }
+      } catch (checkErr) {
+        // Continue gracefully if DB query fails in mock mode
+      }
+    }
+
     // Dynamic Shop Linking based on logged-in user
     let merchantShop = await prisma.shop.findFirst({
       where: { ownerId: req.user.id },

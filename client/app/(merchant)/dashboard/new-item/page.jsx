@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '@/lib/api-client';
+import MerchantOnboardingModal from '@/components/MerchantOnboardingModal';
 import {
   TAXONOMY,
   TECH_CONDITION_GRADES,
@@ -29,6 +30,8 @@ import {
   Square,
   HelpCircle,
   Zap,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function NewItemListingPage() {
@@ -51,6 +54,12 @@ export default function NewItemListingPage() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
+  // Merchant Approval & Verification States
+  const [merchantStatus, setMerchantStatus] = useState('APPROVED'); // 'UNSUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  const [canPostItems, setCanPostItems] = useState(true);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
   // Tech & Retro Electronics Anti-Fraud Fields
   const [techConditionGrade, setTechConditionGrade] = useState('Grade A - Mint');
   const [powerOnStatus, setPowerOnStatus] = useState(true);
@@ -67,11 +76,44 @@ export default function NewItemListingPage() {
     { value: 'FLAWED', label: 'Vintage Character' },
   ];
 
+  // Check merchant KYC and approval status
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const storedUser = localStorage.getItem('unretail_user');
+        if (storedUser) {
+          const u = JSON.parse(storedUser);
+          if (u.role === 'ADMIN') {
+            setMerchantStatus('APPROVED');
+            setCanPostItems(true);
+            setCheckingAuth(false);
+            return;
+          }
+          if (u.merchantStatus) {
+            setMerchantStatus(u.merchantStatus);
+            setCanPostItems(u.merchantStatus === 'APPROVED');
+          }
+        }
+
+        const res = await apiClient.get('/merchant/status');
+        if (res.data?.data) {
+          const data = res.data.data;
+          setMerchantStatus(data.merchantStatus || 'UNSUBMITTED');
+          setCanPostItems(data.canPostItems ?? (data.merchantStatus === 'APPROVED'));
+        }
+      } catch (err) {
+        console.warn('Status check fallback:', err);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkStatus();
+  }, []);
+
   // Dynamic update of subcategories when parent category changes
   useEffect(() => {
     const catObj = getCategoryById(category);
     if (catObj && catObj.subcategories.length > 0) {
-      // Check if current subcategory exists in new parent; if not, pick first
       const exists = catObj.subcategories.some((s) => s.id === subcategory);
       if (!exists) {
         setSubcategory(catObj.subcategories[0].id);
@@ -125,30 +167,6 @@ export default function NewItemListingPage() {
     }
   };
 
-  const handleAddSamplePreset = (preset) => {
-    setTitle(preset.title);
-    setDescription(preset.description);
-    setPrice(preset.price.toString());
-    setCategory(preset.category);
-    setSubcategory(preset.subcategory);
-    setSize(preset.size);
-    setEra(preset.era);
-    setCondition(preset.condition || 'LIKE_NEW');
-    setImages(preset.images);
-    if (preset.techConditionGrade) {
-      setTechConditionGrade(preset.techConditionGrade);
-      setPowerOnStatus(preset.powerOnStatus ?? true);
-      setScreenSensorClarity(preset.screenSensorClarity ?? true);
-      setPortChargingTested(preset.portChargingTested ?? true);
-      setKnownDefectsReported(preset.knownDefectsReported ?? false);
-      setKnownDefectsDesc(preset.knownDefectsDesc || '');
-      setSerialNumberImei(preset.serialNumberImei || '');
-    } else {
-      setSerialNumberImei(preset.serialNumberImei || '');
-    }
-    setValidationErrors({});
-  };
-
   const handleRemoveImage = (idx) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
   };
@@ -156,6 +174,14 @@ export default function NewItemListingPage() {
   // Form Validation & Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!canPostItems) {
+      setErrorMsg('Merchant approval required. Your account must be verified and approved by the platform admin before posting items.');
+      setShowOnboardingModal(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const errors = {};
 
     if (!title.trim()) errors.title = 'Item title is required';
@@ -205,7 +231,7 @@ export default function NewItemListingPage() {
         era,
         condition: isTech ? 'LIKE_NEW' : condition,
         images: images.length > 0 ? images : ['/images/denim_vintage.png'],
-        ...(serialNumberImei.trim() && { serialNumberImei: serialNumberImei.trim() }),
+        ...(isTech && serialNumberImei.trim() && { serialNumberImei: serialNumberImei.trim() }),
         // Tech Anti-Fraud verification payload
         ...(isTech && {
           techConditionGrade,
@@ -259,6 +285,39 @@ export default function NewItemListingPage() {
           <ArrowLeft className="w-4 h-4 text-neon-lime" /> Cancel
         </button>
       </div>
+
+      {/* Admin Approval Gating Banner */}
+      {!canPostItems && (
+        <div className="bg-amber-400/10 border border-amber-400/30 rounded-2xl p-5 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl backdrop-blur-sm">
+          <div className="flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <div className="font-bold text-white text-sm flex items-center gap-2">
+                <span>Admin Approval Required To Sell</span>
+                <span className="px-2 py-0.5 text-[10px] uppercase font-bold rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  {merchantStatus === 'PENDING' ? 'Under Review' : 'KYC Required'}
+                </span>
+              </div>
+              <p className="text-zinc-300 text-xs leading-relaxed">
+                {merchantStatus === 'PENDING'
+                  ? 'Your ID proof document and selfie photo identification are currently under review by platform admins. Item publishing will unlock automatically once approved.'
+                  : 'You must submit your contact details, valid ID proof, and selfie photo identification for admin approval before listing items.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowOnboardingModal(true)}
+            className="shrink-0 px-4 py-2.5 bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-white transition-all shadow-md active:scale-95 flex items-center gap-2"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>{merchantStatus === 'PENDING' ? 'View Review Status' : 'Complete Verification'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Error and Success Banners */}
       <AnimatePresence>
@@ -330,99 +389,6 @@ export default function NewItemListingPage() {
                 className="hidden"
               />
             </label>
-          </div>
-
-          {/* Quick-Fill Sample Presets */}
-          <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-zinc-500 font-medium">Quick Fill Presets:</span>
-            <button
-              type="button"
-              onClick={() =>
-                handleAddSamplePreset({
-                  title: '1990s Vintage Levi 501 Heavyweight Denim',
-                  description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Made in USA with 14oz rigid denim.',
-                  price: 5499,
-                  category: 'Apparel',
-                  subcategory: 'Denim & Bottoms',
-                  size: 'W32 L30',
-                  era: '90s',
-                  condition: 'LIKE_NEW',
-                  images: ['/images/denim_vintage.png'],
-                })
-              }
-              className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-neon-lime hover:border-zinc-600 transition-all"
-            >
-              + 90s Levi 501
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                handleAddSamplePreset({
-                  title: 'Distressed Harley Davidson Leather Bomber Jacket',
-                  description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece.',
-                  price: 12500,
-                  category: 'Apparel',
-                  subcategory: 'Outerwear & Jackets',
-                  size: 'L',
-                  era: '80s',
-                  condition: 'GENTLY_USED',
-                  images: ['/images/leather_jacket.png'],
-                })
-              }
-              className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-neon-lime hover:border-zinc-600 transition-all"
-            >
-              + Harley Bomber
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                handleAddSamplePreset({
-                  title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
-                  description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger.',
-                  price: 9400,
-                  category: 'Tech & Retro Electronics',
-                  subcategory: 'Digicams',
-                  size: 'Pocket',
-                  era: 'Y2K',
-                  techConditionGrade: 'Grade A - Mint',
-                  powerOnStatus: true,
-                  screenSensorClarity: true,
-                  portChargingTested: true,
-                  knownDefectsReported: false,
-                  knownDefectsDesc: 'Pristine sensor and optics with zero dead pixels.',
-                  serialNumberImei: 'DSCP100-SN-894210',
-                  images: ['/images/vintage_camera.png'],
-                })
-              }
-              className="px-2.5 py-1 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-300 hover:text-white hover:border-cyan-400 transition-all"
-            >
-              + Sony Digicam (Tech)
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                handleAddSamplePreset({
-                  title: 'Nintendo Game Boy Color - Atomic Purple Edition',
-                  description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
-                  price: 7800,
-                  category: 'Tech & Retro Electronics',
-                  subcategory: 'Gaming',
-                  size: 'Handheld',
-                  era: '90s',
-                  techConditionGrade: 'Grade A - Mint',
-                  powerOnStatus: true,
-                  screenSensorClarity: true,
-                  portChargingTested: true,
-                  knownDefectsReported: false,
-                  knownDefectsDesc: 'Flawless sound output, clean battery contacts with zero corrosion.',
-                  serialNumberImei: 'GBC-AP-540921',
-                  images: ['/images/retro_gaming.png'],
-                })
-              }
-              className="px-2.5 py-1 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-300 hover:text-white hover:border-cyan-400 transition-all"
-            >
-              + Game Boy Color (Tech)
-            </button>
           </div>
         </div>
 
@@ -689,7 +655,7 @@ export default function NewItemListingPage() {
           )}
         </AnimatePresence>
 
-        {/* Section 4: Title, Price & Details */}
+        {/* Section 4: Title, Price & Details (Apparel & Accessories have NO serial number field) */}
         <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2 space-y-1.5">
@@ -736,15 +702,15 @@ export default function NewItemListingPage() {
             </div>
           </div>
 
-          {/* Brand, Subcategory, Serial Number */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          {/* Brand & Subcategory (Serial number removed for Apparel & Accessories) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div className="space-y-1.5">
               <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Brand (Optional)</label>
               <input
                 type="text"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                placeholder="e.g. Levi's, Harley"
+                placeholder="e.g. Levi's, Harley, Nike"
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
               />
             </div>
@@ -759,19 +725,6 @@ export default function NewItemListingPage() {
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
               />
             </div>
-
-            {!isTech && (
-              <div className="space-y-1.5">
-                <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">Serial Number / Verification ID</label>
-                <input
-                  type="text"
-                  value={serialNumberImei}
-                  onChange={(e) => setSerialNumberImei(e.target.value)}
-                  placeholder="e.g. SN-99824"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white p-3.5 text-sm focus:outline-none focus:border-neon-lime transition-colors"
-                />
-              </div>
-            )}
           </div>
 
           {/* Description */}
@@ -867,13 +820,19 @@ export default function NewItemListingPage() {
         <div className="pt-2">
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full bg-neon-lime hover:bg-white text-black font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_24px_rgba(204,255,0,0.3)] active:scale-[0.98] disabled:opacity-50"
+            disabled={submitting || !canPostItems}
+            className={`w-full font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all ${
+              !canPostItems
+                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700/50'
+                : 'bg-neon-lime hover:bg-white text-black shadow-[0_0_24px_rgba(204,255,0,0.3)] active:scale-[0.98]'
+            } disabled:opacity-60`}
           >
-            <Sparkles className="w-5 h-5 fill-black" />
+            <Sparkles className="w-5 h-5 fill-current" />
             <span>
               {submitting
                 ? 'Validating & Publishing...'
+                : !canPostItems
+                ? 'Merchant Approval Required (Posting Locked)'
                 : isTech
                 ? 'Verify & Publish Tech Grail to Live Feed'
                 : 'Publish Item to Live Rack Catalog'}
@@ -881,6 +840,17 @@ export default function NewItemListingPage() {
           </button>
         </div>
       </form>
+
+      {/* Onboarding & Verification Modal */}
+      <MerchantOnboardingModal
+        isOpen={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        currentStatus={merchantStatus}
+        onVerificationSubmitted={(data) => {
+          setMerchantStatus('PENDING');
+          setCanPostItems(false);
+        }}
+      />
     </div>
   );
 }

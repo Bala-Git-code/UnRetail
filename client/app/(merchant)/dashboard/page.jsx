@@ -4,10 +4,29 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
 import { formatCurrency } from '@/lib/utils';
-import { PlusCircle, Layers, ShoppingBag, TrendingUp, Zap, ShieldCheck, ArrowRight, Store, DollarSign, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
+import MerchantOnboardingModal from '@/components/MerchantOnboardingModal';
+import {
+  PlusCircle,
+  Layers,
+  ShoppingBag,
+  TrendingUp,
+  Zap,
+  ShieldCheck,
+  ArrowRight,
+  Store,
+  DollarSign,
+  CheckCircle2,
+  Sparkles,
+  AlertCircle,
+  Clock,
+  UserCheck,
+} from 'lucide-react';
 
 export default function MerchantDashboardPage() {
   const [shop, setShop] = useState(null);
+  const [merchantStatus, setMerchantStatus] = useState('APPROVED');
+  const [rejectionReason, setRejectionReason] = useState(null);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [stats, setStats] = useState({
     grossSales: 0,
     activeRacks: 0,
@@ -27,13 +46,24 @@ export default function MerchantDashboardPage() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Shop details
+      // 1. Fetch Merchant Status
+      try {
+        const statusRes = await apiClient.get('/merchant/status');
+        if (statusRes.data?.data) {
+          setMerchantStatus(statusRes.data.data.merchantStatus || 'UNSUBMITTED');
+          setRejectionReason(statusRes.data.data.rejectionReason);
+        }
+      } catch (e) {
+        console.warn('Status fetch fallback:', e);
+      }
+
+      // 2. Fetch Shop details
       const shopRes = await apiClient.get('/merchant/my-shop');
       if (shopRes.data?.success && shopRes.data?.data) {
         const shopData = shopRes.data.data;
         setShop(shopData);
 
-        // 2. Fetch Stats & Recent items concurrently
+        // 3. Fetch Stats & Recent items concurrently
         const [statsRes, itemsRes] = await Promise.all([
           apiClient.get('/merchant/dashboard-stats'),
           apiClient.get(`/items?shopId=${shopData.id}&limit=5&status=ALL`),
@@ -105,10 +135,82 @@ export default function MerchantDashboardPage() {
     );
   }
 
-  const activeShop = shop || { shopName: 'Relic Vintage Co.', address: '42 Bandra West, Hill Road', city: 'Mumbai', isVerified: true };
+  const activeShop = shop || { shopName: 'Relic Vintage Co.', address: '42 Bandra West, Hill Road', city: 'Mumbai', isVerified: merchantStatus === 'APPROVED' };
 
   return (
     <div className="p-4 md:p-8 space-y-8 font-sans max-w-7xl mx-auto">
+      {/* Verification Status Alert Card if not approved */}
+      {merchantStatus !== 'APPROVED' && (
+        <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl backdrop-blur-sm ${
+          merchantStatus === 'PENDING'
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+            : merchantStatus === 'REJECTED'
+            ? 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+            : 'bg-neon-lime/10 border-neon-lime/30 text-zinc-200'
+        }`}>
+          <div className="flex items-start gap-3.5">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+              merchantStatus === 'PENDING'
+                ? 'bg-amber-400/20 text-amber-400'
+                : merchantStatus === 'REJECTED'
+                ? 'bg-rose-500/20 text-rose-400'
+                : 'bg-neon-lime/20 text-neon-lime'
+            }`}>
+              {merchantStatus === 'PENDING' ? (
+                <Clock className="w-5 h-5 animate-pulse" />
+              ) : merchantStatus === 'REJECTED' ? (
+                <AlertCircle className="w-5 h-5" />
+              ) : (
+                <ShieldCheck className="w-5 h-5" />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="font-bold text-white text-sm flex items-center gap-2">
+                <span>
+                  {merchantStatus === 'PENDING'
+                    ? 'Merchant Verification Under Review'
+                    : merchantStatus === 'REJECTED'
+                    ? 'KYC Verification Needs Correction'
+                    : 'Merchant ID Proof Verification Required'}
+                </span>
+                <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${
+                  merchantStatus === 'PENDING'
+                    ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                    : merchantStatus === 'REJECTED'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    : 'bg-neon-lime/20 text-neon-lime border border-neon-lime/30'
+                }`}>
+                  {merchantStatus}
+                </span>
+              </div>
+              <p className="text-zinc-300 text-xs leading-relaxed">
+                {merchantStatus === 'PENDING'
+                  ? 'Your ID proof document and selfie verification photo are currently being reviewed by the platform admin. You will be able to list items as soon as your account is approved.'
+                  : merchantStatus === 'REJECTED'
+                  ? `Rejection note: ${rejectionReason || 'Please resubmit valid ID proof document and verification photo.'}`
+                  : 'Please complete your merchant KYC (Aadhaar/PAN/Voter/Passport ID proof & selfie photo verification) to get verified by the admin and start selling on UnRetail.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowOnboardingModal(true)}
+            className={`shrink-0 px-4 py-2.5 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 ${
+              merchantStatus === 'PENDING'
+                ? 'bg-amber-400 text-black hover:bg-white'
+                : merchantStatus === 'REJECTED'
+                ? 'bg-rose-500 text-white hover:bg-rose-400'
+                : 'bg-neon-lime text-black hover:bg-white'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            <span>{merchantStatus === 'PENDING' ? 'View Review Status' : 'Complete Verification'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-street-card/80 border border-zinc-800/90 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl backdrop-blur-sm">
         <div className="space-y-1.5">
@@ -120,7 +222,7 @@ export default function MerchantDashboardPage() {
             Store Performance & Inventory Analytics
           </h1>
           <p className="text-xs text-zinc-400">
-            {activeShop.shopName} ({activeShop.address}, {activeShop.city}) • {activeShop.isVerified ? 'Verified Boutique Rack' : 'Verification Pending'}
+            {activeShop.shopName} ({activeShop.address}, {activeShop.city}) • {merchantStatus === 'APPROVED' ? 'Verified Boutique Partner' : 'Verification Pending Approval'}
           </p>
         </div>
 
@@ -277,6 +379,19 @@ export default function MerchantDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Merchant Onboarding & KYC Modal */}
+      <MerchantOnboardingModal
+        isOpen={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        currentStatus={merchantStatus}
+        onVerificationSubmitted={(data) => {
+          setMerchantStatus('PENDING');
+          if (data?.user?.shopName) {
+            setShop((prev) => ({ ...prev, shopName: data.user.shopName, address: data.user.address, city: data.user.city }));
+          }
+        }}
+      />
     </div>
   );
 }

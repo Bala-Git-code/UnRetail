@@ -6,9 +6,14 @@ export { ITEMS_INDEX };
 let isMeiliAvailable = process.env.MEILISEARCH_ENABLED !== 'false';
 
 const isConnectionRefused = (error) => {
-  return error.code === 'ECONNREFUSED' || 
-         error.message?.includes('fetch failed') || 
-         error.cause?.code === 'ECONNREFUSED';
+  return (
+    error.name === 'MeiliSearchCommunicationError' ||
+    error.type === 'MeiliSearchCommunicationError' ||
+    error.code === 'ECONNREFUSED' ||
+    error.message?.includes('fetch failed') ||
+    error.message?.includes('has failed') ||
+    error.cause?.code === 'ECONNREFUSED'
+  );
 };
 
 export const syncItemToMeilisearch = async (item) => {
@@ -19,11 +24,9 @@ export const syncItemToMeilisearch = async (item) => {
   } catch (error) {
     if (isConnectionRefused(error)) {
       isMeiliAvailable = false;
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`[Meilisearch] Sync skipped: Connection refused at ${client.config.host}`);
-      }
+      // Silent in development; database handles full search fallback
     } else {
-      console.warn('Meilisearch sync failed:', error.message || error);
+      console.warn('[Meilisearch] Sync notice:', error.message || error);
     }
   }
 };
@@ -36,11 +39,9 @@ export const removeItemFromMeilisearch = async (itemId) => {
   } catch (error) {
     if (isConnectionRefused(error)) {
       isMeiliAvailable = false;
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`[Meilisearch] Delete skipped: Connection refused at ${client.config.host}`);
-      }
+      // Silent in development; database handles deletion
     } else {
-      console.warn('Meilisearch delete failed:', error.message || error);
+      console.warn('[Meilisearch] Delete notice:', error.message || error);
     }
   }
 };
@@ -68,11 +69,6 @@ export const searchItemsInMeilisearch = async (query, filters) => {
   } catch (error) {
     if (isConnectionRefused(error)) {
       isMeiliAvailable = false;
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`[Meilisearch] Search falling back to DB: Connection refused at ${client.config.host}`);
-      }
-    } else {
-      console.warn('Meilisearch search error, falling back:', error.message || error);
     }
     return null;
   }

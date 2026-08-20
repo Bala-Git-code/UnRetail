@@ -2,29 +2,30 @@ import prisma from '../prisma/client.js';
 import { syncItemToMeilisearch, removeItemFromMeilisearch, searchItemsInMeilisearch } from '../services/meili.service.js';
 
 export const MOCK_ITEMS = [
+  // Apparel (5 items)
   {
-    id: 'item-101',
+    id: 'item-apparel-101',
     shopId: 'shop-1',
-    title: '1990s Vintage Levi 501 Heavyweight Denim',
-    description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Made in USA with 14oz rigid denim.',
+    title: '1990s Vintage Levi 501 Heavyweight Selvedge Denim',
+    description: 'Authentic 90s vintage Levi 501s with classic dark indigo wash. Made in USA with 14oz rigid raw-feel denim, red tab detailing, button fly, and straight leg silhouette.',
     price: 5499,
     category: 'Apparel',
     subcategory: 'Denim & Bottoms',
-    brand: 'Levi\'s',
+    brand: "Levi's",
     size: 'W32 L30',
     era: '90s',
     condition: 'LIKE_NEW',
-    images: ['/images/denim_vintage.png'],
+    images: ['/images/denim_vintage.png', '/images/thrift_denim.jpg'],
     status: 'AVAILABLE',
     createdAt: new Date('2026-08-01T10:00:00Z'),
     updatedAt: new Date('2026-08-01T10:00:00Z'),
     shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
   },
   {
-    id: 'item-102',
+    id: 'item-apparel-102',
     shopId: 'shop-2',
-    title: 'Distressed Harley Davidson Leather Bomber Jacket',
-    description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece.',
+    title: 'Distressed Harley Davidson Eagle Leather Bomber Jacket',
+    description: 'Heavy cowhide vintage biker jacket with natural distress patina on shoulder seams. Features brass Talon zippers, embossed back eagle crest, quilted satin interior.',
     price: 12500,
     category: 'Apparel',
     subcategory: 'Outerwear & Jackets',
@@ -32,52 +33,164 @@ export const MOCK_ITEMS = [
     size: 'L',
     era: '80s',
     condition: 'GENTLY_USED',
-    images: ['/images/leather_jacket.png'],
+    images: ['/images/leather_jacket.png', '/images/category_clothings.jpg'],
     status: 'AVAILABLE',
     createdAt: new Date('2026-08-02T11:30:00Z'),
     updatedAt: new Date('2026-08-02T11:30:00Z'),
     shop: { id: 'shop-2', shopName: 'Retro Vault', slug: 'retro-vault', city: 'Bengaluru', address: '108 Indiranagar, 100ft Road', isVerified: true },
   },
   {
-    id: 'item-103',
+    id: 'item-apparel-103',
     shopId: 'shop-3',
-    title: 'Y2K Stussy Graphic Heavyweight Tee',
-    description: 'Single stitch faded black graphic tee. Pre-shrunk vintage cotton drop with archival graphic.',
-    price: 2800,
+    title: '1998 Archival Stussy International Tribe Graphic Tee',
+    description: 'Original late 90s single-stitch boxy heavyweight cotton tee. Features archival contrast screenprint graphic with vintage sun fade wash.',
+    price: 3200,
     category: 'Apparel',
     subcategory: 'Tops & Graphic Tees',
     brand: 'Stussy',
     size: 'XL',
-    era: 'Y2K',
+    era: '90s',
     condition: 'LIKE_NEW',
-    images: ['/images/graphic_tee.png'],
+    images: ['/images/graphic_tee.png', 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80'],
     status: 'AVAILABLE',
     createdAt: new Date('2026-08-03T09:15:00Z'),
     updatedAt: new Date('2026-08-03T09:15:00Z'),
     shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', slug: 'dust-and-gold', city: 'Delhi', address: '15 Hauz Khas Village', isVerified: false },
   },
   {
-    id: 'item-104',
+    id: 'item-apparel-104',
     shopId: 'shop-1',
-    title: 'Archival Japanese-Release High-Top Sneakers',
-    description: 'Ultra-rare archival high-top canvas sneakers with vulcanized rubber sole and vintage patina.',
+    title: 'Coogi Australia Textured 3D Wool Knit Sweater',
+    description: 'Iconic kaleidoscopic 3D mercerized wool crewneck knit handcrafted in Australia. Intricate wave patterns, vibrant earth and jewel tone weave, relaxed draped fit.',
+    price: 14800,
+    category: 'Apparel',
+    subcategory: 'Knitwear & Sweaters',
+    brand: 'Coogi',
+    size: 'M',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=800&q=80', '/images/category_clothings.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-04T10:00:00Z'),
+    updatedAt: new Date('2026-08-04T10:00:00Z'),
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
+  },
+  {
+    id: 'item-apparel-105',
+    shopId: 'shop-2',
+    title: '1970s Bohemian Prairie Floral Maxi Dress',
+    description: 'True 70s archival cottagecore maxi dress with delicate floral ditsy print, corset lace-up bodice, ribbon trim accents, and billowy bishop sleeves.',
+    price: 4800,
+    category: 'Apparel',
+    subcategory: 'Dresses & Skirts',
+    brand: 'Gunne Sax Style',
+    size: 'S',
+    era: '70s',
+    condition: 'GENTLY_USED',
+    images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80', '/images/thrift_curation.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-05T12:00:00Z'),
+    updatedAt: new Date('2026-08-05T12:00:00Z'),
+    shop: { id: 'shop-2', shopName: 'Retro Vault', slug: 'retro-vault', city: 'Bengaluru', address: '108 Indiranagar, 100ft Road', isVerified: true },
+  },
+
+  // Accessories (5 items)
+  {
+    id: 'item-acc-201',
+    shopId: 'shop-1',
+    title: 'Archival Mihara Yasuhiro Melted High-Top Canvas Sneakers',
+    description: 'Original distorted clay-molded vulcanized rubber sole sneakers. Contrast white topstitching, archival heel stamp, light heel drag with 90% tread life remaining.',
     price: 8900,
     category: 'Accessories',
     subcategory: 'Footwear & Sneakers',
     brand: 'Mihara Yasuhiro',
-    size: 'US 10',
+    size: 'OS',
     era: 'Archival',
     condition: 'GENTLY_USED',
-    images: ['/images/archival_sneakers.png'],
+    images: ['/images/archival_sneakers.png', '/images/category_accessories.jpg'],
     status: 'AVAILABLE',
-    createdAt: new Date('2026-08-04T14:20:00Z'),
-    updatedAt: new Date('2026-08-04T14:20:00Z'),
+    createdAt: new Date('2026-08-06T14:20:00Z'),
+    updatedAt: new Date('2026-08-06T14:20:00Z'),
     shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
   },
   {
-    id: 'item-105',
+    id: 'item-acc-202',
+    shopId: 'shop-3',
+    title: '1990s Prada Tessuto Sport Nylon Mini Messenger Bag',
+    description: 'Signature military-grade Pocono nylon shoulder crossbody with enameled triangle logo plaque, Lampo zipper, adjustable webbing strap, and clean interior lining.',
+    price: 16500,
+    category: 'Accessories',
+    subcategory: 'Bags & Backpacks',
+    brand: 'Prada',
+    size: 'OS',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80', '/images/category_accessories.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-07T11:00:00Z'),
+    updatedAt: new Date('2026-08-07T11:00:00Z'),
+    shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', slug: 'dust-and-gold', city: 'Delhi', address: '15 Hauz Khas Village', isVerified: false },
+  },
+  {
+    id: 'item-acc-203',
     shopId: 'shop-2',
-    title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
+    title: 'Vintage Jean Paul Gaultier 56-6106 Steampunk Sunglasses',
+    description: 'Rare archival round titanium wire frames with side mesh shields and spring-loaded temple hinges. Fitted with UV400 amber tint mineral glass lenses. Original leather case included.',
+    price: 18900,
+    category: 'Accessories',
+    subcategory: 'Eyewear',
+    brand: 'Jean Paul Gaultier',
+    size: 'OS',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80', '/images/category_accessories.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-08T15:30:00Z'),
+    updatedAt: new Date('2026-08-08T15:30:00Z'),
+    shop: { id: 'shop-2', shopName: 'Retro Vault', slug: 'retro-vault', city: 'Bengaluru', address: '108 Indiranagar, 100ft Road', isVerified: true },
+  },
+  {
+    id: 'item-acc-204',
+    shopId: 'shop-1',
+    title: '1990s Chrome Hearts Dagger Motif Sterling Silver Ring',
+    description: 'Solid 925 sterling silver ring featuring the iconic gothic dagger relief and engraved cross hallmarks. Heavy weight (18g) with natural oxidized patina in crevices.',
+    price: 11500,
+    category: 'Accessories',
+    subcategory: 'Jewelry',
+    brand: 'Chrome Hearts',
+    size: 'OS',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=800&q=80', '/images/category_accessories.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-09T09:40:00Z'),
+    updatedAt: new Date('2026-08-09T09:40:00Z'),
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
+  },
+  {
+    id: 'item-acc-205',
+    shopId: 'shop-3',
+    title: 'Vintage 1996 Atlanta Olympics Green Corduroy Strapback Cap',
+    description: 'Authentic 1996 Olympic Games commemorative 6-panel corduroy hat with high-density embroidered torch graphic, brass embossed buckle, and green underbrim.',
+    price: 2600,
+    category: 'Accessories',
+    subcategory: 'Headwear',
+    brand: 'Starter',
+    size: 'OS',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    images: ['https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80', '/images/thrift_vault.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-10T16:15:00Z'),
+    updatedAt: new Date('2026-08-10T16:15:00Z'),
+    shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', slug: 'dust-and-gold', city: 'Delhi', address: '15 Hauz Khas Village', isVerified: false },
+  },
+
+  // Tech & Retro Electronics (5 items)
+  {
+    id: 'item-tech-301',
+    shopId: 'shop-2',
+    title: 'Sony Cyber-shot DSC-P100 Silver CCD Digicam Kit',
     description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger.',
     price: 9400,
     category: 'Tech & Retro Electronics',
@@ -93,16 +206,16 @@ export const MOCK_ITEMS = [
     knownDefectsReported: false,
     knownDefectsDesc: 'Pristine sensor and optics with zero dead pixels.',
     serialNumberImei: 'DSCP100-SN-894210',
-    images: ['/images/vintage_camera.png'],
+    images: ['/images/vintage_camera.png', '/images/thrift_retro_tech.jpg'],
     status: 'AVAILABLE',
-    createdAt: new Date('2026-08-05T16:45:00Z'),
-    updatedAt: new Date('2026-08-05T16:45:00Z'),
+    createdAt: new Date('2026-08-11T16:45:00Z'),
+    updatedAt: new Date('2026-08-11T16:45:00Z'),
     shop: { id: 'shop-2', shopName: 'Retro Vault', slug: 'retro-vault', city: 'Bengaluru', address: '108 Indiranagar, 100ft Road', isVerified: true },
   },
   {
-    id: 'item-106',
+    id: 'item-tech-302',
     shopId: 'shop-1',
-    title: 'Nintendo Game Boy Color - Atomic Purple Edition',
+    title: 'Nintendo Game Boy Color - Atomic Purple Translucent Edition',
     description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
     price: 7800,
     category: 'Tech & Retro Electronics',
@@ -118,16 +231,16 @@ export const MOCK_ITEMS = [
     knownDefectsReported: false,
     knownDefectsDesc: 'Flawless sound output, clean battery contacts with zero corrosion.',
     serialNumberImei: 'GBC-AP-540921',
-    images: ['/images/retro_gaming.png'],
+    images: ['/images/retro_gaming.png', '/images/category_electronics.jpg'],
     status: 'AVAILABLE',
-    createdAt: new Date('2026-08-06T12:10:00Z'),
-    updatedAt: new Date('2026-08-06T12:10:00Z'),
+    createdAt: new Date('2026-08-12T12:10:00Z'),
+    updatedAt: new Date('2026-08-12T12:10:00Z'),
     shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
   },
   {
-    id: 'item-107',
+    id: 'item-tech-303',
     shopId: 'shop-3',
-    title: 'Sony Walkman WM-EX674 Slim Cassette Player',
+    title: 'Sony Walkman WM-EX674 Brushed Aluminum Slim Cassette Player',
     description: 'High-end brushed aluminum Japanese cassette player with Dolby B NR, auto-reverse, and mega bass.',
     price: 11200,
     category: 'Tech & Retro Electronics',
@@ -143,11 +256,61 @@ export const MOCK_ITEMS = [
     knownDefectsReported: false,
     knownDefectsDesc: 'Fresh new drive belt installed. Fully calibrated playback speed.',
     serialNumberImei: 'WM674-88310-JP',
-    images: ['/images/retro_audio.png'],
+    images: ['/images/retro_audio.png', '/images/thrift_retro_tech.jpg'],
     status: 'AVAILABLE',
-    createdAt: new Date('2026-08-07T15:30:00Z'),
-    updatedAt: new Date('2026-08-07T15:30:00Z'),
+    createdAt: new Date('2026-08-13T15:30:00Z'),
+    updatedAt: new Date('2026-08-13T15:30:00Z'),
     shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', slug: 'dust-and-gold', city: 'Delhi', address: '15 Hauz Khas Village', isVerified: false },
+  },
+  {
+    id: 'item-tech-304',
+    shopId: 'shop-2',
+    title: 'Canon PowerShot SD1000 Digital ELPH (Matte Silver Boxy)',
+    description: 'The holy grail of minimalist industrial design digicams. Pure boxy aluminum aesthetic, 7.1MP CCD sensor for dreamy warm flash photos, optical viewfinder, and SD card compatibility.',
+    price: 8600,
+    category: 'Tech & Retro Electronics',
+    subcategory: 'Digicams',
+    brand: 'Canon',
+    size: 'Pocket',
+    era: 'Y2K',
+    condition: 'LIKE_NEW',
+    techConditionGrade: 'Grade A - Mint',
+    powerOnStatus: true,
+    screenSensorClarity: true,
+    portChargingTested: true,
+    knownDefectsReported: false,
+    knownDefectsDesc: 'Flawless DIGIC III image processor, razor sharp optics with original NB-4L battery.',
+    serialNumberImei: 'SD1000-CN-318902',
+    images: ['/images/thrift_retro_tech.jpg', '/images/vintage_camera.png'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-14T11:20:00Z'),
+    updatedAt: new Date('2026-08-14T11:20:00Z'),
+    shop: { id: 'shop-2', shopName: 'Retro Vault', slug: 'retro-vault', city: 'Bengaluru', address: '108 Indiranagar, 100ft Road', isVerified: true },
+  },
+  {
+    id: 'item-tech-305',
+    shopId: 'shop-1',
+    title: 'Sega Dreamcast Japanese Edition Console & Visual Memory Unit (VMU)',
+    description: 'Archival 128-bit Sega console with 1x OEM controller, 1x LCD Visual Memory Unit (VMU) with fresh CR2032 batteries, AV composite cables, and universal power supply.',
+    price: 13500,
+    category: 'Tech & Retro Electronics',
+    subcategory: 'Gaming',
+    brand: 'Sega',
+    size: 'Standard Desktop',
+    era: '90s',
+    condition: 'LIKE_NEW',
+    techConditionGrade: 'Grade A - Mint',
+    powerOnStatus: true,
+    screenSensorClarity: true,
+    portChargingTested: true,
+    knownDefectsReported: false,
+    knownDefectsDesc: 'Laser calibrated and reads both GD-ROMs and CD-Rs flawlessly. Quiet fan bearing.',
+    serialNumberImei: 'HKT-3000-SEGA-9921',
+    images: ['/images/retro_gaming.png', '/images/category_electronics.jpg'],
+    status: 'AVAILABLE',
+    createdAt: new Date('2026-08-15T13:40:00Z'),
+    updatedAt: new Date('2026-08-15T13:40:00Z'),
+    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', slug: 'relic-vintage', city: 'Mumbai', address: '42 Bandra West, Hill Road', isVerified: true },
   },
 ];
 
@@ -494,7 +657,12 @@ export const createItem = async (req, res) => {
 export const updateItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
+
+    // Parse numerical price if present
+    if (updateData.price !== undefined && updateData.price !== null) {
+      updateData.price = parseFloat(updateData.price);
+    }
 
     // Check shop owner
     let item;
@@ -507,10 +675,10 @@ export const updateItem = async (req, res) => {
       console.warn('Prisma update check failed, using mock check:', dbError.message);
     }
 
-    // Auth validation
-    if (item) {
-      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
-        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to update this item' });
+    // Strict Ownership Authorization validation
+    if (item && item.shop) {
+      if (req.user.role !== 'ADMIN' && item.shop.ownerId !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You can only update products listed by your own boutique' });
       }
     }
 
@@ -519,6 +687,7 @@ export const updateItem = async (req, res) => {
       updatedItem = await prisma.item.update({
         where: { id: itemId },
         data: updateData,
+        include: { shop: true },
       });
     } catch (dbError) {
       const idx = MOCK_ITEMS.findIndex((i) => i.id === itemId);
@@ -530,7 +699,11 @@ export const updateItem = async (req, res) => {
       }
     }
 
-    await syncItemToMeilisearch(updatedItem);
+    try {
+      await syncItemToMeilisearch(updatedItem);
+    } catch (meiliErr) {
+      // Meilisearch optional
+    }
 
     return res.status(200).json({
       success: true,
@@ -556,25 +729,41 @@ export const deleteItem = async (req, res) => {
       console.warn('Prisma delete check failed, using mock check:', dbError.message);
     }
 
-    // Auth validation
-    if (item) {
-      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
-        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to delete this item' });
+    // Strict Ownership Authorization validation
+    if (item && item.shop) {
+      if (req.user.role !== 'ADMIN' && item.shop.ownerId !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You can only delete products listed by your own boutique' });
       }
     }
 
     try {
+      // Clean up any test orders or disputes referencing this item first
+      const relatedOrders = await prisma.order.findMany({
+        where: { itemId },
+        select: { id: true },
+      });
+
+      if (relatedOrders.length > 0) {
+        const orderIds = relatedOrders.map((o) => o.id);
+        await prisma.dispute.deleteMany({ where: { orderId: { in: orderIds } } });
+        await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+      }
+
       await prisma.item.delete({ where: { id: itemId } });
     } catch (err) {
       const idx = MOCK_ITEMS.findIndex((i) => i.id === itemId);
       if (idx !== -1) MOCK_ITEMS.splice(idx, 1);
     }
 
-    await removeItemFromMeilisearch(itemId);
+    try {
+      await removeItemFromMeilisearch(itemId);
+    } catch (meiliErr) {
+      // Meilisearch optional
+    }
 
     return res.status(200).json({
       success: true,
-      message: 'Item deleted and removed from search index',
+      message: 'Item successfully deleted and removed from rack inventory',
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -596,10 +785,10 @@ export const markSoldInStore = async (req, res) => {
       console.warn('Prisma markSold check failed, using mock check:', dbError.message);
     }
 
-    // Auth validation
-    if (item) {
-      if (item.shop.ownerId !== req.user.id && req.user.role !== 'MERCHANT' && req.user.role !== 'ADMIN') {
-        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to toggle status for this shop' });
+    // Strict Ownership Authorization validation
+    if (item && item.shop) {
+      if (req.user.role !== 'ADMIN' && item.shop.ownerId !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to toggle status for another merchant\'s boutique' });
       }
     }
 

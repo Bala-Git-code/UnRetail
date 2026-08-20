@@ -14,9 +14,10 @@ export default function CustomerOrdersPage() {
   const [disputeReason, setDisputeReason] = useState('');
   const [submittedDispute, setSubmittedDispute] = useState(null);
   const [submittingDispute, setSubmittingDispute] = useState(false);
-  const [time, setTime] = useState(Date.now());
+  const [time, setTime] = useState(0);
 
   useEffect(() => {
+    setTime(Date.now());
     fetchOrders();
     const interval = setInterval(() => setTime(Date.now()), 60000); // refresh countdown every minute
     return () => clearInterval(interval);

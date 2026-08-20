@@ -32,18 +32,25 @@ export default function LoginPage() {
     roleRef.current = role;
   }, [role]);
 
-  // Redirect if user is already logged in
+  const getRedirectTarget = (userRole) => {
+    if (userRole === 'MERCHANT') return '/dashboard';
+    if (userRole === 'ADMIN') return '/admin/dashboard';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect && redirect.startsWith('/')) return redirect;
+    }
+    return '/feed';
+  };
+
+  // Check if active user is present for display
   useEffect(() => {
     const storedUser = localStorage.getItem('unretail_user');
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        if (parsed.role === 'ADMIN') {
-          router.push('/admin/dashboard');
-        } else if (parsed.role === 'MERCHANT') {
-          router.push('/dashboard');
-        } else {
-          router.push('/feed');
+        if (parsed?.fullName) {
+          // Keep state ready but don't forcibly trap in redirect loop
         }
       } catch (e) {}
     }
@@ -71,13 +78,7 @@ export default function LoginPage() {
         setSuccessMsg(`Welcome, ${res.data.user.fullName || res.data.user.email || 'Shopper'}! Redirecting...`);
 
         setTimeout(() => {
-          if (res.data.user.role === 'MERCHANT') {
-            router.push('/dashboard');
-          } else if (res.data.user.role === 'ADMIN') {
-            router.push('/admin/dashboard');
-          } else {
-            router.push('/feed');
-          }
+          router.push(getRedirectTarget(res.data.user.role));
         }, 700);
       } else {
         throw new Error(res.data?.error || 'Sign in response was invalid');
@@ -85,6 +86,54 @@ export default function LoginPage() {
     } catch (err) {
       console.error('Google Auth error:', err);
       setError(err.response?.data?.error || err.message || 'Google Sign-In failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const demoUser = {
+        id: role === 'MERCHANT' ? 'demo_merchant_1' : 'demo_customer_1',
+        fullName: role === 'MERCHANT' ? 'Aarav Patel' : 'Rahul Sharma',
+        email: role === 'MERCHANT' ? 'aarav@relicvintage.in' : 'rahul.sharma@unretail.in',
+        role: role,
+        phoneNumber: '9876543210',
+        address: '42 Bandra West, Hill Road',
+        city: 'Mumbai',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+      };
+
+      try {
+        const res = await apiClient.post('/auth/google', {
+          email: demoUser.email,
+          fullName: demoUser.fullName,
+          role: demoUser.role,
+          avatarUrl: demoUser.avatarUrl,
+        });
+        if (res.data?.token && res.data?.user) {
+          localStorage.setItem('unretail_token', res.data.token);
+          localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
+          setSuccessMsg(`Welcome, ${res.data.user.fullName}! Redirecting...`);
+          setTimeout(() => {
+            router.push(getRedirectTarget(res.data.user.role));
+          }, 500);
+          return;
+        }
+      } catch (postErr) {
+        // Fallback to local storage
+      }
+
+      localStorage.setItem('unretail_token', 'demo_jwt_token_' + Date.now());
+      localStorage.setItem('unretail_user', JSON.stringify(demoUser));
+      setSuccessMsg(`Signed in as ${demoUser.fullName}! Redirecting...`);
+      setTimeout(() => {
+        router.push(getRedirectTarget(demoUser.role));
+      }, 500);
+    } catch (err) {
+      setError('Demo login failed: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -283,6 +332,19 @@ export default function LoginPage() {
             {/* Official Google Identity Services SDK Button */}
             <div className="flex justify-center w-full min-h-[44px] overflow-hidden rounded-xl">
               <div ref={googleBtnRef} className="flex justify-center w-full" />
+            </div>
+
+            {/* Fast Demo Autofill / Quick Sign In Button */}
+            <div className="pt-2 border-t border-zinc-800/80">
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={loading}
+                className="w-full bg-zinc-900 hover:bg-neon-lime hover:text-black text-zinc-300 border border-zinc-750 font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl transition-all shadow-sm active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{loading ? 'Signing In...' : `Instant ${role === 'MERCHANT' ? 'Merchant' : 'Customer'} Demo Sign In`}</span>
+              </button>
             </div>
           </div>
 

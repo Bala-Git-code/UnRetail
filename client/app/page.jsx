@@ -34,11 +34,14 @@ import {
   Camera,
   Cpu,
   BadgeCheck,
-  ChevronDown
+  ChevronDown,
+  ShoppingBag
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { useCart } from '@/lib/CartContext';
 
 export default function LandingPage() {
+  const { cartCount, openCart } = useCart();
   const [activeTab, setActiveTab] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [user, setUser] = useState(null);
@@ -314,6 +317,21 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Bag Button */}
+            <button
+              onClick={openCart}
+              className="relative flex items-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/80 hover:border-zinc-500 rounded-full py-1.5 px-3.5 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Open Shopping Bag"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-neon-lime" />
+              <span className="hidden sm:inline">Bag</span>
+              {cartCount > 0 && (
+                <span className="bg-neon-lime text-black font-extrabold text-[10px] px-2 py-0.2 rounded-full font-mono animate-pulse shadow-[0_0_10px_rgba(204,255,0,0.5)]">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             {user ? (
               <div className="flex items-center gap-2.5">
                 <Link

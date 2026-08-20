@@ -1,7 +1,7 @@
 import prisma from '../prisma/client.js';
 import { syncItemToMeilisearch, removeItemFromMeilisearch, searchItemsInMeilisearch } from '../services/meili.service.js';
 
-const MOCK_ITEMS = [
+export const MOCK_ITEMS = [
   {
     id: 'item-101',
     shopId: 'shop-1',

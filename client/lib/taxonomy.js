@@ -35,7 +35,6 @@ export const TAXONOMY = [
       { id: 'Eyewear', name: 'Eyewear', slug: 'eyewear' },
       { id: 'Other', name: 'Other', slug: 'other' },
     ],
-    sizeOptions: ['US 7', 'US 8', 'US 9', 'US 10', 'US 11', 'US 12', 'Small', 'Medium', 'Large', 'OS'],
   },
   {
     id: 'Tech & Retro Electronics',

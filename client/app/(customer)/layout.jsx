@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Flame, Search, ShoppingBag, Store, LogOut, Menu, X, ShieldCheck } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { useCart } from '@/lib/CartContext';
 
 export default function CustomerLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { cartCount, openCart } = useCart();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -75,6 +77,23 @@ export default function CustomerLayout({ children }) {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            {/* Cart Trigger Button */}
+            <button
+              onClick={openCart}
+              className="relative flex items-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm active:scale-95 group cursor-pointer"
+              title="Open Shopping Bag"
+            >
+              <ShoppingBag className="w-4 h-4 text-zinc-300 group-hover:text-neon-lime transition-colors" />
+              <span>Bag</span>
+              {cartCount > 0 ? (
+                <span className="bg-neon-lime text-black font-extrabold text-[10px] px-2 py-0.5 rounded-full font-mono animate-pulse shadow-[0_0_10px_rgba(204,255,0,0.5)]">
+                  {cartCount}
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-500 font-mono">0</span>
+              )}
+            </button>
+
             <Link
               href="/dashboard"
               className="text-xs font-medium text-zinc-400 hover:text-amber-300 flex items-center gap-2 bg-zinc-900/80 border border-zinc-800 rounded-xl px-3.5 py-2 hover:border-amber-400/40 transition-all"
@@ -127,6 +146,19 @@ export default function CustomerLayout({ children }) {
           {/* Mobile Actions */}
           <div className="flex items-center gap-2 md:hidden">
             <button
+              onClick={openCart}
+              className="relative p-2 bg-zinc-900/90 border border-zinc-800 rounded-xl text-zinc-300 hover:text-white"
+              aria-label="Open Cart"
+            >
+              <ShoppingBag className="w-5 h-5 text-neon-lime" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-neon-lime text-black font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-mono">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={handleLogout}
               className="flex items-center gap-1 bg-zinc-900/90 hover:bg-rose-500/15 border border-zinc-800 text-zinc-300 hover:text-rose-400 px-2.5 py-1.5 rounded-xl font-semibold text-xs transition-colors"
               title="Log Out"
@@ -166,6 +198,22 @@ export default function CustomerLayout({ children }) {
               </Link>
             );
           })}
+
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              openCart();
+            }}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-zinc-200"
+          >
+            <div className="flex items-center gap-3">
+              <ShoppingBag className="w-4 h-4 text-neon-lime" />
+              <span>Shopping Bag</span>
+            </div>
+            <span className="bg-neon-lime text-black font-bold text-xs px-2 py-0.5 rounded-full font-mono">
+              {cartCount}
+            </span>
+          </button>
 
           <Link
             href="/dashboard"

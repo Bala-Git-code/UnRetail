@@ -25,9 +25,12 @@ import {
   Lock,
   ChevronDown,
   ChevronUp,
+  Check,
 } from 'lucide-react';
+import { useCart } from '@/lib/CartContext';
 
 export default function SearchPage() {
+  const { addToCart, isInCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
@@ -493,25 +496,27 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Sizing Filter */}
-          <div className="space-y-2 pt-2 border-t border-zinc-800/80">
-            <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Size / Form Factor</label>
-            <div className="flex flex-wrap gap-1.5">
-              {sizes.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSize(selectedSize === s ? '' : s)}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-all text-xs ${
-                    selectedSize === s
-                      ? 'bg-neon-lime text-black shadow-sm font-bold'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+          {/* Sizing Filter (Hidden for Accessories) */}
+          {selectedCategory !== 'Accessories' && (
+            <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+              <label className="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Size / Form Factor</label>
+              <div className="flex flex-wrap gap-1.5">
+                {sizes.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSize(selectedSize === s ? '' : s)}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-all text-xs ${
+                      selectedSize === s
+                        ? 'bg-neon-lime text-black shadow-sm font-bold'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Era Filter */}
           <div className="space-y-2 pt-2 border-t border-zinc-800/80">
@@ -644,25 +649,13 @@ export default function SearchPage() {
                         }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                        {isItemTech && item.techConditionGrade ? (
-                          <span className="bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-cyan-500/40 backdrop-blur-md">
-                            {item.techConditionGrade}
-                          </span>
-                        ) : (
-                          <span className="bg-black/70 text-[11px] text-emerald-400 font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur-md">
-                            {formatCondition(item.condition)}
-                          </span>
-                        )}
-                        {item.subcategory && (
-                          <span className="bg-black/75 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded-full border border-zinc-700/80 backdrop-blur-md">
+                      {item.subcategory && (
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
+                          <span className="bg-black/75 text-zinc-300 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-zinc-700/80 backdrop-blur-md">
                             {item.subcategory}
                           </span>
-                        )}
-                      </div>
-                      <div className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neon-lime text-black shadow-sm">
-                        {item.size || 'OS'}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
@@ -678,16 +671,30 @@ export default function SearchPage() {
                         </Link>
                       </div>
 
-                      <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                      <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
                         <span className="text-lg font-bold text-white tracking-tight tabular-nums">
                           {formatCurrency(item.price)}
                         </span>
-                        <Link
-                          href={`/item/${item.id}`}
-                          className="bg-white hover:bg-neon-lime text-black font-semibold text-xs uppercase px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
-                        >
-                          View Item
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => addToCart(item, true)}
+                            disabled={item.status === 'SOLD'}
+                            className={`p-2 rounded-xl border text-xs transition-all ${
+                              isInCart(item.id)
+                                ? 'bg-zinc-900 border-neon-lime text-neon-lime'
+                                : 'bg-zinc-900/80 hover:bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                            } active:scale-95 disabled:opacity-50 cursor-pointer`}
+                            title={isInCart(item.id) ? 'In Your Bag' : 'Add to Bag'}
+                          >
+                            {isInCart(item.id) ? <Check className="w-3.5 h-3.5 text-neon-lime" /> : <ShoppingBag className="w-3.5 h-3.5" />}
+                          </button>
+                          <Link
+                            href={`/item/${item.id}`}
+                            className="bg-neon-lime hover:bg-white text-black font-extrabold text-xs uppercase px-3 py-2 rounded-xl transition-all shadow-sm active:scale-95"
+                          >
+                            View
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </motion.div>

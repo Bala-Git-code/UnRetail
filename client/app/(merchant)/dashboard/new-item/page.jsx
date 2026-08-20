@@ -118,8 +118,12 @@ export default function NewItemListingPage() {
       if (!exists) {
         setSubcategory(catObj.subcategories[0].id);
       }
-      if (catObj.sizeOptions && !catObj.sizeOptions.includes(size)) {
-        setSize(catObj.sizeOptions[0]);
+      if (catObj.sizeOptions && catObj.sizeOptions.length > 0) {
+        if (!catObj.sizeOptions.includes(size)) {
+          setSize(catObj.sizeOptions[0]);
+        }
+      } else {
+        setSize('OS');
       }
     }
   }, [category]);
@@ -767,34 +771,36 @@ export default function NewItemListingPage() {
             </div>
           </div>
 
-          {/* Sizing Tag */}
-          <div className="space-y-2">
-            <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
-              8. Size Tag / Specification
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {(currentCategoryObj.sizeOptions || ['S', 'M', 'L', 'XL', 'OS']).map((s) => (
-                <button
-                  type="button"
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
-                    size === s
-                      ? 'bg-neon-lime text-black shadow-sm font-bold'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+          {/* Sizing Tag (Hidden if category has no size options e.g. Accessories) */}
+          {currentCategoryObj?.sizeOptions && currentCategoryObj.sizeOptions.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
+                8. Size Tag / Specification
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {currentCategoryObj.sizeOptions.map((s) => (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setSize(s)}
+                    className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+                      size === s
+                        ? 'bg-neon-lime text-black shadow-sm font-bold'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* General Apparel Condition (Hidden if Tech is active since Tech has dedicated grading) */}
           {!isTech && (
             <div className="space-y-2 pt-2 border-t border-zinc-800/80">
               <label className="text-zinc-200 font-bold uppercase tracking-wider text-xs block">
-                9. Apparel Condition Grade
+                {currentCategoryObj?.sizeOptions && currentCategoryObj.sizeOptions.length > 0 ? '9. ' : '8. '}Apparel Condition Grade
               </label>
               <div className="flex flex-wrap gap-2">
                 {apparelConditions.map((c) => (

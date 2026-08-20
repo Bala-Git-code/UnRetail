@@ -21,14 +21,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Heart,
   Cpu,
   Lock,
   CheckCircle2,
   SlidersHorizontal,
+  Check,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCart } from '@/lib/CartContext';
 
 export default function FeedPage() {
+  const router = useRouter();
+  const { addToCart, isInCart } = useCart();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -109,33 +113,19 @@ export default function FeedPage() {
     }));
   };
 
-  const handleBuyNow = async (item) => {
-    setPurchasing(true);
-    setOrderSuccess(null);
-    try {
-      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('unretail_user') : null;
-      const user = storedUser ? JSON.parse(storedUser) : null;
+  const handleBuyNow = (item) => {
+    if (!item || item.status === 'SOLD') return;
+    addToCart(item, false);
+    router.push('/checkout');
+  };
 
-      const res = await apiClient.post('/orders/create-intent', {
-        itemId: item.id,
-        shopId: item.shopId || item.shop?.id || 'shop-1',
-        buyerId: user?.id || 'guest_collector',
-      });
-
-      if (res.data?.success) {
-        setOrderSuccess({
-          orderId: res.data.order?.id,
-          razorpayOrderId: res.data.razorpayOrder?.id,
-          amount: res.data.order?.amountPaid || item.price,
-          itemTitle: item.title,
-        });
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Order creation failed. Please check network connection.');
-    } finally {
-      setPurchasing(false);
+  const handleAddToBag = (item, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
     }
+    if (!item || item.status === 'SOLD') return;
+    addToCart(item, true);
   };
 
   const currentSubcategories = selectedCategory !== 'ALL' ? getSubcategories(selectedCategory) : [];
@@ -349,52 +339,14 @@ export default function FeedPage() {
                     </>
                   )}
 
-                  {/* Badges Overlay */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
-                    {/* Condition Badge (Tech vs Apparel) */}
-                    {isItemTech && item.techConditionGrade ? (
-                      <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-full px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-md flex items-center gap-1 shadow-sm">
-                        <Cpu className="w-3 h-3 text-cyan-400" />
-                        <span>{item.techConditionGrade}</span>
-                      </span>
-                    ) : (
-                      <span
-                        className={
-                          item.condition === 'LIKE_NEW'
-                            ? 'badge-condition-like-new backdrop-blur-md'
-                            : item.condition === 'GENTLY_USED'
-                            ? 'badge-condition-gently-used backdrop-blur-md'
-                            : 'badge-condition-flawed backdrop-blur-md'
-                        }
-                      >
-                        {formatCondition(item.condition)}
-                      </span>
-                    )}
-
-                    {item.subcategory && (
+                  {/* Category / Subcategory Overlay */}
+                  {item.subcategory && (
+                    <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
                       <span className="bg-black/75 text-zinc-300 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-zinc-700/80 backdrop-blur-md">
                         {item.subcategory}
                       </span>
-                    )}
-                  </div>
-
-                  {/* Size & Heart Overlay */}
-                  <div className="absolute top-3 right-3 flex items-center gap-2">
-                    <button
-                      onClick={(e) => toggleSaveGrail(item.id, e)}
-                      title={savedGrailIds.includes(item.id) ? 'Saved to Watchlist' : 'Save Item'}
-                      className={`p-2 rounded-full border backdrop-blur-md transition-all shadow-sm ${
-                        savedGrailIds.includes(item.id)
-                          ? 'bg-rose-500 text-white border-rose-400'
-                          : 'bg-black/70 text-zinc-300 border-zinc-700/80 hover:text-white hover:border-white'
-                      }`}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${savedGrailIds.includes(item.id) ? 'fill-current' : ''}`} />
-                    </button>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neon-lime text-black shadow-sm">
-                      {item.size || 'OS'}
-                    </span>
-                  </div>
+                    </div>
+                  )}
 
                   {/* Quick View Button */}
                   <button
@@ -430,7 +382,7 @@ export default function FeedPage() {
                   </div>
 
                   {/* Price & Buy Action */}
-                  <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+                  <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between gap-2">
                     <div>
                       <span className="text-[11px] text-zinc-500 uppercase tracking-wider block font-medium">Price</span>
                       <span className="text-xl font-bold text-white tracking-tight tabular-nums">
@@ -438,14 +390,28 @@ export default function FeedPage() {
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => handleBuyNow(item)}
-                      disabled={purchasing || item.status === 'SOLD'}
-                      className="bg-white hover:bg-neon-lime text-black font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>{item.status === 'SOLD' ? 'Sold Out' : 'Buy Now'}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => handleAddToBag(item, e)}
+                        disabled={item.status === 'SOLD'}
+                        className={`p-2.5 rounded-xl border transition-all ${
+                          isInCart(item.id)
+                            ? 'bg-zinc-900 border-neon-lime text-neon-lime'
+                            : 'bg-zinc-900/80 hover:bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                        } active:scale-95 disabled:opacity-50 cursor-pointer`}
+                        title={isInCart(item.id) ? 'In Your Bag' : 'Add to Bag'}
+                      >
+                        {isInCart(item.id) ? <Check className="w-4 h-4 text-neon-lime" /> : <ShoppingBag className="w-4 h-4" />}
+                      </button>
+
+                      <button
+                        onClick={() => handleBuyNow(item)}
+                        disabled={item.status === 'SOLD'}
+                        className="bg-neon-lime hover:bg-white text-black font-extrabold text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl flex items-center gap-1 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        <span>{item.status === 'SOLD' ? 'Sold Out' : 'Buy Now'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -504,9 +470,12 @@ export default function FeedPage() {
                           Condition: <strong className="text-white">{formatCondition(quickViewItem.condition)}</strong>
                         </span>
                       )}
-                      <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-300">
-                        Size: <strong className="text-white">{quickViewItem.size || 'OS'}</strong>
-                      </span>
+                      {quickViewItem.category !== 'Accessories' && (
+                        <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-300">
+                          {isTechCategory(quickViewItem.category) ? 'Form Factor: ' : 'Size: '}
+                          <strong className="text-white">{quickViewItem.size || 'OS'}</strong>
+                        </span>
+                      )}
                       <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-300">
                         Era: <strong className="text-white">{quickViewItem.era || '90s'}</strong>
                       </span>
@@ -561,19 +530,30 @@ export default function FeedPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Link
-                        href={`/item/${quickViewItem.id}`}
-                        className="bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs uppercase tracking-wider px-4 py-3 rounded-xl border border-zinc-700 transition-all"
+                      <button
+                        onClick={() => {
+                          const itemToBag = quickViewItem;
+                          setQuickViewItem(null);
+                          handleAddToBag(itemToBag);
+                        }}
+                        disabled={quickViewItem.status === 'SOLD'}
+                        className={`px-4 py-3 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all ${
+                          isInCart(quickViewItem.id)
+                            ? 'bg-zinc-900 border-neon-lime text-neon-lime'
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-700'
+                        }`}
                       >
-                        Full Details
-                      </Link>
+                        {isInCart(quickViewItem.id) ? 'In Bag' : 'Add to Bag'}
+                      </button>
+
                       <button
                         onClick={() => {
                           const itemToBuy = quickViewItem;
                           setQuickViewItem(null);
                           handleBuyNow(itemToBuy);
                         }}
-                        className="bg-neon-lime hover:bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95"
+                        disabled={quickViewItem.status === 'SOLD'}
+                        className="bg-neon-lime hover:bg-white text-black font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95"
                       >
                         Instant Buy
                       </button>

@@ -13,6 +13,7 @@ import {
   Tag,
   ShoppingBag,
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   Store,
   Clock,
@@ -24,7 +25,9 @@ import {
   Cpu,
   Lock,
   FileCheck,
+  Check,
 } from 'lucide-react';
+import { useCart } from '@/lib/CartContext';
 
 const FALLBACK_ITEMS_MAP = {
   'item-101': {
@@ -128,6 +131,7 @@ const FALLBACK_ITEMS_MAP = {
 export default function ProductDetailPage(props) {
   const routeParams = useParams();
   const router = useRouter();
+  const { addToCart, isInCart, openCart } = useCart();
 
   let resolvedId = 'item-101';
   if (routeParams?.itemId) {
@@ -199,32 +203,14 @@ export default function ProductDetailPage(props) {
 
   const handleCheckout = async () => {
     if (!item) return;
-    setPurchasing(true);
-    setOrderSuccess(null);
+    if (item.status === 'SOLD') return;
+    addToCart(item, false);
+    router.push('/checkout');
+  };
 
-    try {
-      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('unretail_user') : null;
-      const user = storedUser ? JSON.parse(storedUser) : null;
-
-      const res = await apiClient.post('/orders/create-intent', {
-        itemId: item.id,
-        shopId: item.shopId || item.shop?.id || 'shop-1',
-        buyerId: user?.id || 'guest_collector',
-      });
-
-      if (res.data?.success) {
-        setOrderSuccess({
-          orderId: res.data.order?.id,
-          razorpayOrderId: res.data.razorpayOrder?.id,
-          amount: res.data.order?.amountPaid || item.price,
-        });
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Order creation failed. Please try again.');
-    } finally {
-      setPurchasing(false);
-    }
+  const handleAddToBag = () => {
+    if (!item) return;
+    addToCart(item, true);
   };
 
   if (loading) {
@@ -379,12 +365,14 @@ export default function ProductDetailPage(props) {
                   : formatCondition(item?.condition)}
               </span>
             </div>
-            <div>
-              <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">
-                {isTech ? 'Form Factor' : 'Size Tag'}
-              </span>
-              <span className="font-semibold text-white text-sm">{item?.size || 'OS'}</span>
-            </div>
+            {item?.category !== 'Accessories' && (
+              <div>
+                <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">
+                  {isTech ? 'Form Factor' : 'Size Tag'}
+                </span>
+                <span className="font-semibold text-white text-sm">{item?.size || 'OS'}</span>
+              </div>
+            )}
             <div>
               <span className="text-zinc-500 block uppercase tracking-wider text-[10px] font-semibold">Category</span>
               <span className="font-semibold text-white text-sm">{item?.category || 'Apparel'}</span>
@@ -472,24 +460,42 @@ export default function ProductDetailPage(props) {
             </div>
           </div>
 
-          {/* Razorpay Purchase Trigger */}
+          {/* Dual Checkout & Bag Action CTAs */}
           <div className="pt-2 space-y-3">
-            <button
-              onClick={handleCheckout}
-              disabled={purchasing || item?.status === 'SOLD'}
-              className="w-full bg-neon-lime hover:bg-white text-black font-bold text-sm uppercase tracking-wider py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(204,255,0,0.3)] active:scale-[0.98] disabled:opacity-50"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              <span>
-                {purchasing
-                  ? 'Initiating Razorpay Escrow...'
-                  : item?.status === 'SOLD'
-                  ? 'Item Sold Out'
-                  : 'Buy Now with Razorpay'}
-              </span>
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={handleAddToBag}
+                disabled={item?.status === 'SOLD'}
+                className={`py-4 px-6 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all border ${
+                  isInCart(item?.id)
+                    ? 'bg-zinc-900 border-neon-lime text-neon-lime shadow-[0_0_15px_rgba(204,255,0,0.15)]'
+                    : 'bg-zinc-900/90 hover:bg-zinc-800 border-zinc-700 text-white hover:border-zinc-500'
+                } active:scale-95 disabled:opacity-50 cursor-pointer`}
+              >
+                {isInCart(item?.id) ? (
+                  <>
+                    <Check className="w-4 h-4 text-neon-lime" />
+                    <span>In Your Bag</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Add to Bag</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleCheckout}
+                disabled={item?.status === 'SOLD'}
+                className="bg-neon-lime hover:bg-white text-black font-extrabold text-xs uppercase tracking-wider py-4 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-[0_0_25px_rgba(204,255,0,0.35)] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              >
+                <span>{item?.status === 'SOLD' ? 'Sold Out' : 'Instant Checkout'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
             <p className="text-xs text-zinc-500 text-center font-medium">
-              100% Escrow Protection • 7-Day Returns & Dispute Resolution
+              100% Escrow Protection • 48-Hour Inspection Window on Delivery
             </p>
           </div>
         </div>

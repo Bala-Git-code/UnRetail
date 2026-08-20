@@ -1,5 +1,7 @@
 import { Plus_Jakarta_Sans, Outfit, JetBrains_Mono } from 'next/font/google';
 import RouteTransitionLoader from '@/components/RouteTransitionLoader';
+import { CartProvider } from '@/lib/CartContext';
+import CartDrawer from '@/components/cart/CartDrawer';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -37,13 +39,15 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
         className="bg-street-black text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-neon-lime selection:text-black font-sans"
       >
-        <RouteTransitionLoader>
-          <div className="relative flex min-h-screen flex-col bg-street-black">
-            {children}
-          </div>
-        </RouteTransitionLoader>
+        <CartProvider>
+          <RouteTransitionLoader>
+            <div className="relative flex min-h-screen flex-col bg-street-black">
+              {children}
+            </div>
+          </RouteTransitionLoader>
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );
 }
-

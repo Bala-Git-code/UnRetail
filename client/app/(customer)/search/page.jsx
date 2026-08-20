@@ -157,7 +157,11 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
-    fetchFilteredItems();
+    const timer = setTimeout(() => {
+      fetchFilteredItems();
+    }, 250);
+
+    return () => clearTimeout(timer);
   }, [query, selectedCategory, selectedSubcategory, selectedEra, selectedCondition, selectedTechGrade, selectedCity]);
 
   const fetchFilteredItems = async () => {

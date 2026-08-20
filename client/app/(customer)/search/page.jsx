@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 
 export default function SearchPage() {
-  const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
@@ -40,6 +39,119 @@ export default function SearchPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [suggestionSuffix, setSuggestionSuffix] = useState('');
+
+  // Extract suggestions from current items matching the query
+  const getSuggestionsFromItems = (searchQuery, itemList) => {
+    if (!searchQuery) return [];
+    const normalizedQuery = searchQuery.toLowerCase().trim();
+    if (normalizedQuery.length === 0) return [];
+    
+    const extracted = [];
+    itemList.forEach((item) => {
+      // 1. Check title and extract matching phrase starting with query
+      if (item.title) {
+        const words = item.title.split(/\s+/);
+        for (let i = 0; i < words.length; i++) {
+          const phrase = words.slice(i).join(' ');
+          if (phrase.toLowerCase().startsWith(normalizedQuery)) {
+            extracted.push({
+              text: phrase,
+              type: 'title'
+            });
+          }
+        }
+      }
+      // 2. Check brand
+      if (item.brand && item.brand.toLowerCase().startsWith(normalizedQuery)) {
+        extracted.push({
+          text: item.brand,
+          type: 'brand'
+        });
+      }
+      // 3. Check subcategory
+      if (item.subcategory && item.subcategory.toLowerCase().startsWith(normalizedQuery)) {
+        extracted.push({
+          text: item.subcategory,
+          type: 'subcategory'
+        });
+      }
+    });
+
+    // Remove duplicates (case-insensitive)
+    const seen = new Set();
+    const unique = [];
+    for (const item of extracted) {
+      const key = item.text.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(item);
+      }
+    }
+
+    return unique.slice(0, 5);
+  };
+
+  // Compute suggestions and autocomplete suffix
+  useEffect(() => {
+    const list = getSuggestionsFromItems(query, items);
+    setSuggestions(list);
+    
+    if (list.length > 0 && query) {
+      const topSuggestion = list[0].text;
+      const normalizedQuery = query.toLowerCase();
+      const normalizedSuggestion = topSuggestion.toLowerCase();
+      
+      if (normalizedSuggestion.startsWith(normalizedQuery)) {
+        const suffix = topSuggestion.slice(query.length);
+        setSuggestionSuffix(suffix);
+      } else {
+        setSuggestionSuffix('');
+      }
+    } else {
+      setSuggestionSuffix('');
+    }
+  }, [query, items]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab' || e.key === 'ArrowRight') {
+      const cursorAtEnd = e.target.selectionStart === query.length;
+      if (suggestionSuffix && (e.key === 'Tab' || cursorAtEnd)) {
+        e.preventDefault();
+        setQuery(query + suggestionSuffix);
+        setSuggestionSuffix('');
+        setShowDropdown(false);
+      }
+    } else if (e.key === 'ArrowDown') {
+      if (suggestions.length > 0) {
+        e.preventDefault();
+        setShowDropdown(true);
+        setFocusedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (suggestions.length > 0) {
+        e.preventDefault();
+        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+      }
+    } else if (e.key === 'Enter') {
+      if (focusedIndex >= 0 && focusedIndex < suggestions.length) {
+        e.preventDefault();
+        setQuery(suggestions[focusedIndex].text);
+        setShowDropdown(false);
+        setFocusedIndex(-1);
+      } else {
+        setShowDropdown(false);
+      }
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setFocusedIndex(-1);
+    }
+  };
 
   useEffect(() => {
     fetchFilteredItems();
@@ -131,21 +243,79 @@ export default function SearchPage() {
         </div>
 
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search across apparel & retro tech (e.g. Levi 501, Sony Cyber-shot, Game Boy, Harley Bomber)..."
-            className="w-full bg-street-card/90 border border-zinc-800 rounded-2xl text-white text-sm pl-12 pr-10 py-3.5 focus:outline-none focus:border-neon-lime transition-all shadow-lg placeholder:text-zinc-500"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="relative w-full bg-street-card/90 border border-zinc-800 focus-within:border-neon-lime rounded-2xl transition-all shadow-lg flex items-center overflow-hidden">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            
+            {/* Autocomplete Background Text */}
+            {suggestionSuffix && (
+              <div className="absolute left-12 right-10 top-1/2 -translate-y-1/2 text-sm font-sans text-zinc-400/65 pointer-events-none select-none whitespace-pre overflow-hidden">
+                <span className="opacity-0">{query}</span>
+                <span>{suggestionSuffix}</span>
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowDropdown(true);
+                setFocusedIndex(-1);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => {
+                // Delay blur slightly to allow suggestion click events to fire first
+                setTimeout(() => setShowDropdown(false), 200);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Search across apparel & retro tech (e.g. Levi 501, Sony Cyber-shot, Game Boy, Harley Bomber)..."
+              className="w-full bg-transparent text-white text-sm pl-12 pr-10 py-3.5 focus:outline-none placeholder:text-zinc-500"
+            />
+
+            {query && (
+              <button
+                onClick={() => {
+                  setQuery('');
+                  setSuggestionSuffix('');
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Suggestions Dropdown */}
+          {showDropdown && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 mt-2 bg-street-card/95 border border-zinc-800/90 rounded-xl overflow-hidden shadow-2xl z-50 backdrop-blur-md">
+              <ul className="py-1">
+                {suggestions.map((suggestion, index) => (
+                  <li key={index}>
+                    <button
+                      onMouseDown={() => {
+                        setQuery(suggestion.text);
+                        setShowDropdown(false);
+                        setFocusedIndex(-1);
+                      }}
+                      onMouseEnter={() => setFocusedIndex(index)}
+                      className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between transition-colors ${
+                        index === focusedIndex
+                          ? 'bg-neon-lime/10 text-neon-lime font-semibold'
+                          : 'text-zinc-300 hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Search className="w-3.5 h-3.5 opacity-60 text-neon-lime" />
+                        <span>{suggestion.text}</span>
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold px-2 py-0.5 bg-zinc-900/50 rounded border border-zinc-800/85">
+                        {suggestion.type}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 

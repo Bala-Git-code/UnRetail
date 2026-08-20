@@ -15,9 +15,14 @@ export const ITEMS_INDEX = 'items';
 
 export async function initMeilisearchIndex() {
   try {
+    try {
+      await meilisearchClient.createIndex(ITEMS_INDEX, { primaryKey: 'id' });
+    } catch (e) {
+      // Index might already exist, which is fine
+    }
     const index = meilisearchClient.index(ITEMS_INDEX);
     await index.updateSearchableAttributes(['title', 'description', 'category', 'condition']);
-    await index.updateFilterableAttributes(['category', 'condition', 'price', 'status', 'shop_id']);
+    await index.updateFilterableAttributes(['category', 'subcategory', 'condition', 'era', 'price', 'status', 'shop_id']);
     await index.updateSortableAttributes(['price', 'created_at']);
     console.log(`[Meilisearch] Index '${ITEMS_INDEX}' initialized successfully.`);
   } catch (error) {

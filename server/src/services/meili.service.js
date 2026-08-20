@@ -6,7 +6,7 @@ export { ITEMS_INDEX };
 export const syncItemToMeilisearch = async (item) => {
   try {
     const index = client.index(ITEMS_INDEX);
-    await index.addDocuments([item]);
+    await index.addDocuments([item], { primaryKey: 'id' });
   } catch (error) {
     console.warn('Meilisearch sync failed (is Meilisearch server running?):', error);
   }
@@ -28,6 +28,7 @@ export const searchItemsInMeilisearch = async (query, filters) => {
     if (filters) {
       const parts = [];
       if (filters.category) parts.push(`category = "${filters.category}"`);
+      if (filters.subcategory) parts.push(`subcategory = "${filters.subcategory}"`);
       if (filters.era) parts.push(`era = "${filters.era}"`);
       if (filters.condition) parts.push(`condition = "${filters.condition}"`);
       if (filters.status) parts.push(`status = "${filters.status}"`);

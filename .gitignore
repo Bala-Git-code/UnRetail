@@ -25,3 +25,7 @@ Thumbs.db
 # Build Outputs
 dist
 build
+
+# Meilisearch Local Files
+server/scripts/meilisearch.exe
+server/scripts/data.ms/

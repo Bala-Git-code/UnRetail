@@ -13,6 +13,7 @@ import itemRoutes from './routes/item.routes.js';
 import merchantRoutes from './routes/merchant.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import disputeRoutes from './routes/dispute.routes.js';
+import { initMeilisearchIndex } from '../config/meilisearch.js';
 
 dotenv.config();
 
@@ -71,8 +72,9 @@ app.use((_req, res) => {
 
 // Start Express Server
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 UnRetail Express API Server running on port ${PORT} (ES Modules)`);
+    await initMeilisearchIndex();
   });
 }
 

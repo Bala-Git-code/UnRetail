@@ -1,8 +1,10 @@
 import prisma from '../src/prisma/client.js';
 import { syncItemToMeilisearch } from '../src/services/meili.service.js';
+import { initMeilisearchIndex } from '../config/meilisearch.js';
 
 async function syncSearchIndex() {
   console.log('🔍 Synchronizing all available items to Meilisearch index...');
+  await initMeilisearchIndex();
 
   try {
     const items = await prisma.item.findMany({

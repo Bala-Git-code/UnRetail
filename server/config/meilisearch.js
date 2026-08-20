@@ -15,6 +15,12 @@ export const ITEMS_INDEX = 'items';
 
 export async function initMeilisearchIndex() {
   try {
+    if (process.env.MEILISEARCH_ENABLED === 'false') {
+      return;
+    }
+    // Perform a quick health check to see if Meilisearch is online
+    await meilisearchClient.health();
+
     try {
       await meilisearchClient.createIndex(ITEMS_INDEX, { primaryKey: 'id' });
     } catch (e) {
@@ -26,7 +32,10 @@ export async function initMeilisearchIndex() {
     await index.updateSortableAttributes(['price', 'created_at']);
     console.log(`[Meilisearch] Index '${ITEMS_INDEX}' initialized successfully.`);
   } catch (error) {
-    console.warn(`[Meilisearch] Connection fallback - make sure Meilisearch service is running at ${host}`);
+    // Only display connection failure logs in production environments
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(`[Meilisearch] Connection fallback - make sure Meilisearch service is running at ${host}`);
+    }
   }
 }
 

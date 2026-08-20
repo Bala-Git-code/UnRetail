@@ -3,12 +3,22 @@ import meilisearchClient, { ITEMS_INDEX } from '../../config/meilisearch.js';
 const client = meilisearchClient;
 export { ITEMS_INDEX };
 
+const isConnectionRefused = (error) => {
+  return error.code === 'ECONNREFUSED' || 
+         error.message?.includes('fetch failed') || 
+         error.cause?.code === 'ECONNREFUSED';
+};
+
 export const syncItemToMeilisearch = async (item) => {
   try {
     const index = client.index(ITEMS_INDEX);
     await index.addDocuments([item], { primaryKey: 'id' });
   } catch (error) {
-    console.warn('Meilisearch sync failed (is Meilisearch server running?):', error);
+    if (isConnectionRefused(error)) {
+      console.warn(`[Meilisearch] Sync skipped: Connection refused at ${client.config.host}`);
+    } else {
+      console.warn('Meilisearch sync failed:', error.message || error);
+    }
   }
 };
 
@@ -17,7 +27,11 @@ export const removeItemFromMeilisearch = async (itemId) => {
     const index = client.index(ITEMS_INDEX);
     await index.deleteDocument(itemId);
   } catch (error) {
-    console.warn('Meilisearch delete failed:', error);
+    if (isConnectionRefused(error)) {
+      console.warn(`[Meilisearch] Delete skipped: Connection refused at ${client.config.host}`);
+    } else {
+      console.warn('Meilisearch delete failed:', error.message || error);
+    }
   }
 };
 
@@ -41,7 +55,11 @@ export const searchItemsInMeilisearch = async (query, filters) => {
     });
     return searchResults.hits;
   } catch (error) {
-    console.warn('Meilisearch search error, falling back:', error);
+    if (isConnectionRefused(error)) {
+      console.warn(`[Meilisearch] Search falling back to DB: Connection refused at ${client.config.host}`);
+    } else {
+      console.warn('Meilisearch search error, falling back:', error.message || error);
+    }
     return null;
   }
 };

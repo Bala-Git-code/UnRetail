@@ -91,53 +91,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const demoUser = {
-        id: role === 'MERCHANT' ? 'demo_merchant_1' : 'demo_customer_1',
-        fullName: role === 'MERCHANT' ? 'Aarav Patel' : 'Rahul Sharma',
-        email: role === 'MERCHANT' ? 'aarav@relicvintage.in' : 'rahul.sharma@unretail.in',
-        role: role,
-        phoneNumber: '9876543210',
-        address: '42 Bandra West, Hill Road',
-        city: 'Mumbai',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-      };
-
-      try {
-        const res = await apiClient.post('/auth/google', {
-          email: demoUser.email,
-          fullName: demoUser.fullName,
-          role: demoUser.role,
-          avatarUrl: demoUser.avatarUrl,
-        });
-        if (res.data?.token && res.data?.user) {
-          localStorage.setItem('unretail_token', res.data.token);
-          localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
-          setSuccessMsg(`Welcome, ${res.data.user.fullName}! Redirecting...`);
-          setTimeout(() => {
-            router.push(getRedirectTarget(res.data.user.role));
-          }, 500);
-          return;
-        }
-      } catch (postErr) {
-        // Fallback to local storage
-      }
-
-      localStorage.setItem('unretail_token', 'demo_jwt_token_' + Date.now());
-      localStorage.setItem('unretail_user', JSON.stringify(demoUser));
-      setSuccessMsg(`Signed in as ${demoUser.fullName}! Redirecting...`);
-      setTimeout(() => {
-        router.push(getRedirectTarget(demoUser.role));
-      }, 500);
-    } catch (err) {
-      setError('Demo login failed: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const initGoogleGsi = () => {
     const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '469391995611-l5jv5h8ialovojpnh9aflv8r9cei7a7v.apps.googleusercontent.com';
@@ -332,19 +285,6 @@ export default function LoginPage() {
             {/* Official Google Identity Services SDK Button */}
             <div className="flex justify-center w-full min-h-[44px] overflow-hidden rounded-xl">
               <div ref={googleBtnRef} className="flex justify-center w-full" />
-            </div>
-
-            {/* Fast Demo Autofill / Quick Sign In Button */}
-            <div className="pt-2 border-t border-zinc-800/80">
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={loading}
-                className="w-full bg-zinc-900 hover:bg-neon-lime hover:text-black text-zinc-300 border border-zinc-750 font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl transition-all shadow-sm active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{loading ? 'Signing In...' : `Instant ${role === 'MERCHANT' ? 'Merchant' : 'Customer'} Demo Sign In`}</span>
-              </button>
             </div>
           </div>
 

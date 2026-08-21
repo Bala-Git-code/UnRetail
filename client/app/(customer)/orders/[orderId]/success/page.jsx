@@ -20,7 +20,7 @@ import {
   Store,
 } from 'lucide-react';
 
-function OrderSuccessContent(props) {
+export function OrderSuccessContent(props) {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();

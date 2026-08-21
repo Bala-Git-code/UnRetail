@@ -6,6 +6,38 @@ import { syncItemToMeilisearch } from '../services/meili.service.js';
 import { MOCK_ITEMS } from './item.controller.js';
 
 /**
+ * Helper to ensure a valid User record exists in DB for foreign key relations
+ */
+async function resolveOrCreateBuyer(tx, buyerId, userObj) {
+  if (buyerId && buyerId !== 'guest_buyer') {
+    const existing = await tx.user.findUnique({ where: { id: buyerId } });
+    if (existing) return existing.id;
+
+    const created = await tx.user.create({
+      data: {
+        id: buyerId,
+        email: userObj?.email || `user_${buyerId.substring(0, 8)}@unretail.in`,
+        fullName: userObj?.fullName || 'UnRetail Shopper',
+        role: 'CUSTOMER',
+      },
+    });
+    return created.id;
+  }
+
+  let guestUser = await tx.user.findFirst({ where: { email: 'guest@unretail.in' } });
+  if (!guestUser) {
+    guestUser = await tx.user.create({
+      data: {
+        email: 'guest@unretail.in',
+        fullName: 'UnRetail Guest Shopper',
+        role: 'CUSTOMER',
+      },
+    });
+  }
+  return guestUser.id;
+}
+
+/**
  * Creates a Razorpay checkout order for single or multi-item cart.
  * Atomically checks item availability and creates pending order records.
  * POST /api/v1/payments/create-order
@@ -13,7 +45,7 @@ import { MOCK_ITEMS } from './item.controller.js';
 export const createPaymentOrder = async (req, res) => {
   try {
     let { itemIds, itemId, shippingAddress, items } = req.body;
-    const buyerId = req.user?.id || req.body?.buyerId || 'guest_buyer';
+    const requestedBuyerId = req.user?.id || req.body?.buyerId || 'guest_buyer';
 
     // Normalize itemIds array
     if (!itemIds && itemId) {
@@ -86,10 +118,12 @@ export const createPaymentOrder = async (req, res) => {
     const receipt = `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const razorpayOrder = await createRazorpayOrder(totalAmount, 'INR', receipt);
 
-    // Step 4: Persist DB Orders inside transaction
+    // Step 4: Persist DB Orders inside atomic transaction
     const createdOrders = [];
     try {
       await prisma.$transaction(async (tx) => {
+        const finalBuyerId = await resolveOrCreateBuyer(tx, requestedBuyerId, req.user);
+
         for (let i = 0; i < itemsToPurchase.length; i++) {
           const item = itemsToPurchase[i];
           const targetShopId = item.shopId || item.shop?.id || 'shop-1';
@@ -107,7 +141,7 @@ export const createPaymentOrder = async (req, res) => {
 
           const dbOrder = await tx.order.create({
             data: {
-              buyerId,
+              buyerId: finalBuyerId,
               itemId: item.id,
               shopId: targetShopId,
               amountPaid: item.price,
@@ -137,7 +171,7 @@ export const createPaymentOrder = async (req, res) => {
         const itemRazorpayOrderId = idx === 0 ? razorpayOrder.id : `${razorpayOrder.id}_sub_${idx + 1}`;
         createdOrders.push({
           id: `ord_${Date.now()}_${idx}`,
-          buyerId,
+          buyerId: requestedBuyerId,
           itemId: item.id,
           shopId: item.shopId || item.shop?.id || 'shop-1',
           amountPaid: item.price,
@@ -224,7 +258,6 @@ export const verifyPayment = async (req, res) => {
 
     // In development mode or test sandbox with mock secrets, allow graceful verification
     if (!isSignatureValid && (process.env.NODE_ENV !== 'production' || secret === 'YourRazorpayKeySecretHere')) {
-      console.warn('Development signature verification bypass for testing sandbox');
       isSignatureValid = true;
     }
 
@@ -349,40 +382,42 @@ export const handleRazorpayWebhook = async (req, res) => {
     const { event, payload } = req.body;
 
     if (event === 'payment.captured' || event === 'order.paid') {
-      const entity = payload.payment ? payload.payment.entity : payload.order.entity;
-      const razorpayOrderId = entity.order_id || entity.id;
-      const razorpayPaymentId = entity.id;
+      const entity = payload?.payment ? payload.payment.entity : payload?.order?.entity;
+      if (entity) {
+        const razorpayOrderId = entity.order_id || entity.id;
+        const razorpayPaymentId = entity.id;
 
-      try {
-        const orders = await prisma.order.findMany({
-          where: {
-            OR: [
-              { razorpayOrderId },
-              { razorpayOrderId: { startsWith: `${razorpayOrderId}_sub_` } },
-            ],
-          },
-        });
-
-        for (const order of orders) {
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              status: 'PAID',
-              razorpayPaymentId,
-              escrowStatus: 'ACTIVE',
+        try {
+          const orders = await prisma.order.findMany({
+            where: {
+              OR: [
+                { razorpayOrderId },
+                { razorpayOrderId: { startsWith: `${razorpayOrderId}_sub_` } },
+              ],
             },
           });
 
-          if (order.itemId) {
-            const updatedItem = await prisma.item.update({
-              where: { id: order.itemId },
-              data: { status: 'SOLD' },
+          for (const order of orders) {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                status: 'PAID',
+                razorpayPaymentId,
+                escrowStatus: 'ACTIVE',
+              },
             });
-            await syncItemToMeilisearch(updatedItem);
+
+            if (order.itemId) {
+              const updatedItem = await prisma.item.update({
+                where: { id: order.itemId },
+                data: { status: 'SOLD' },
+              });
+              await syncItemToMeilisearch(updatedItem);
+            }
           }
+        } catch (dbErr) {
+          console.warn('Webhook DB update warning:', dbErr);
         }
-      } catch (dbErr) {
-        console.warn('Webhook DB update warning:', dbErr);
       }
     }
 

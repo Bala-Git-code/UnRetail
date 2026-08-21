@@ -1,56 +1,99 @@
 import prisma from '../prisma/client.js';
 import { createRazorpayOrder } from '../services/razorpay.service.js';
 
+/**
+ * Helper to ensure a valid User record exists in DB for foreign key relations
+ */
+async function resolveOrCreateBuyer(tx, buyerId, userObj) {
+  if (buyerId && buyerId !== 'guest_buyer') {
+    const existing = await tx.user.findUnique({ where: { id: buyerId } });
+    if (existing) return existing.id;
+
+    // Create record for this buyer ID
+    const created = await tx.user.create({
+      data: {
+        id: buyerId,
+        email: userObj?.email || `user_${buyerId.substring(0, 8)}@unretail.in`,
+        fullName: userObj?.fullName || 'UnRetail Shopper',
+        role: 'CUSTOMER',
+      },
+    });
+    return created.id;
+  }
+
+  // Find or create default guest user
+  let guestUser = await tx.user.findFirst({ where: { email: 'guest@unretail.in' } });
+  if (!guestUser) {
+    guestUser = await tx.user.create({
+      data: {
+        email: 'guest@unretail.in',
+        fullName: 'UnRetail Guest Shopper',
+        role: 'CUSTOMER',
+      },
+    });
+  }
+  return guestUser.id;
+}
+
 export const createOrderIntent = async (req, res) => {
   try {
     const { itemId, shopId } = req.body;
-    const buyerId = req.user?.id || req.body?.buyerId || 'guest_buyer';
+    const requestedBuyerId = req.user?.id || req.body?.buyerId || 'guest_buyer';
 
     if (!itemId) {
       return res.status(400).json({ success: false, error: 'itemId is required' });
     }
 
     // Run inside prisma transaction to ensure atomic stock checking
-    const result = await prisma.$transaction(async (tx) => {
-      const item = await tx.item.findUnique({
-        where: { id: itemId },
-        include: { shop: true },
-      });
+    let result;
+    try {
+      result = await prisma.$transaction(async (tx) => {
+        const item = await tx.item.findUnique({
+          where: { id: itemId },
+          include: { shop: true },
+        });
 
-      if (!item) {
-        throw new Error('Item not found');
+        if (!item) {
+          throw new Error('Item not found in catalog');
+        }
+
+        if (item.status !== 'AVAILABLE') {
+          throw new Error('Item is no longer available for purchase');
+        }
+
+        const price = item.price;
+        const targetShopId = item.shopId || shopId || 'shop-1';
+        const finalBuyerId = await resolveOrCreateBuyer(tx, requestedBuyerId, req.user);
+
+        // Mark the item status as PENDING to hold stock during payment session
+        await tx.item.update({
+          where: { id: itemId },
+          data: { status: 'PENDING' },
+        });
+
+        const receipt = `rcpt_${Date.now()}`;
+        const razorpayOrder = await createRazorpayOrder(price, 'INR', receipt);
+
+        const dbOrder = await tx.order.create({
+          data: {
+            buyerId: finalBuyerId,
+            itemId,
+            shopId: targetShopId,
+            amountPaid: price,
+            razorpayOrderId: razorpayOrder.id,
+            status: 'PENDING',
+            escrowStatus: 'ACTIVE',
+          },
+        });
+
+        return { razorpayOrder, dbOrder };
+      });
+    } catch (txErr) {
+      if (txErr.message.includes('not found') || txErr.message.includes('no longer available')) {
+        return res.status(400).json({ success: false, error: txErr.message });
       }
-
-      if (item.status !== 'AVAILABLE') {
-        throw new Error('Item is no longer available for purchase');
-      }
-
-      const price = item.price;
-      const targetShopId = item.shopId || shopId || 'shop-1';
-
-      // Mark the item status as PENDING to hold stock during payment session
-      await tx.item.update({
-        where: { id: itemId },
-        data: { status: 'PENDING' },
-      });
-
-      const receipt = `rcpt_${Date.now()}`;
-      const razorpayOrder = await createRazorpayOrder(price, 'INR', receipt);
-
-      const dbOrder = await tx.order.create({
-        data: {
-          buyerId,
-          itemId,
-          shopId: targetShopId,
-          amountPaid: price,
-          razorpayOrderId: razorpayOrder.id,
-          status: 'PENDING',
-          escrowStatus: 'ACTIVE',
-        },
-      });
-
-      return { razorpayOrder, dbOrder };
-    });
+      throw txErr;
+    }
 
     return res.status(201).json({
       success: true,
@@ -141,7 +184,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Verify user owns the shop, or is MERCHANT, or is ADMIN
-    const isOwner = order.shop.ownerId === req.user.id;
+    const isOwner = order.shop?.ownerId === req.user.id;
     const isMerchant = req.user.role === 'MERCHANT';
     const isAdmin = req.user.role === 'ADMIN';
     if (!isOwner && !isMerchant && !isAdmin) {
@@ -264,4 +307,3 @@ export const getOrderById = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
-

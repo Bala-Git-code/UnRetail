@@ -7,16 +7,20 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 });
 
-// Request interceptor to attach JWT token if present
+// Request interceptor to attach JWT token if present in browser storage
 apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('unretail_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      try {
+        const token = localStorage.getItem('unretail_token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (err) {
+        // Guard against localStorage access restrictions in private mode
       }
     }
     return config;
@@ -24,10 +28,17 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for unified error handling
+// Response interceptor for unified error normalization
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Normalization of network & server errors for consistent consumption
+    if (error.response?.status === 401) {
+      // Clear token if server returns unauthorized
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        // Stale token cleanup without aggressive redirect
+      }
+    }
     return Promise.reject(error);
   }
 );

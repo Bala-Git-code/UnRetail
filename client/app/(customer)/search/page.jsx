@@ -27,9 +27,10 @@ import {
   ChevronUp,
   Check,
 } from 'lucide-react';
+import { Suspense } from 'react';
 import { useCart } from '@/lib/CartContext';
 
-export default function SearchPage() {
+function SearchPageContent() {
   const { addToCart, isInCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
@@ -711,3 +712,21 @@ export default function SearchPage() {
     </div>
   );
 }
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-street-black text-zinc-100 flex items-center justify-center p-6 text-sm">
+          <div className="flex items-center gap-2 text-zinc-400">
+            <Sparkles className="w-4 h-4 text-neon-lime animate-spin" />
+            <span>Loading Search & Racks...</span>
+          </div>
+        </div>
+      }
+    >
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+

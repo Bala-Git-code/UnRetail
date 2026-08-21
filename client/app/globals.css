@@ -8,6 +8,7 @@
   --font-jetbrains-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+
 @layer base {
   html {
     scroll-behavior: smooth;

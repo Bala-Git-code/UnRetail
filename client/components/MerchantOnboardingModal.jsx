@@ -305,6 +305,10 @@ export default function MerchantOnboardingModal({ isOpen, onClose, onVerificatio
         setMerchantStatus('PENDING');
         setSuccessMsg('Your merchant verification details have been submitted. Your application is now under admin review.');
 
+        if (res.data?.token) {
+          localStorage.setItem('unretail_token', res.data.token);
+        }
+
         if (typeof window !== 'undefined') {
           const stored = localStorage.getItem('unretail_user');
           if (stored) {
@@ -313,12 +317,14 @@ export default function MerchantOnboardingModal({ isOpen, onClose, onVerificatio
               const updatedUser = {
                 ...parsed,
                 ...res.data.data.user,
+                role: 'MERCHANT',
                 merchantStatus: 'PENDING',
               };
               localStorage.setItem('unretail_user', JSON.stringify(updatedUser));
             } catch (e) {}
           }
         }
+
 
         if (onVerificationSubmitted) {
           onVerificationSubmitted(res.data.data);

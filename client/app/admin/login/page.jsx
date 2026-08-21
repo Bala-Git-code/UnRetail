@@ -46,11 +46,6 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleQuickDemoAdmin = () => {
-    setEmail('balagiri702@gmail.com');
-    setPassword('0987654321zxcvbnm');
-  };
-
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 flex flex-col justify-between items-center p-6 relative font-sans overflow-hidden selection:bg-amber-400 selection:text-black">
       
@@ -115,9 +110,10 @@ export default function AdminLoginPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@unretail.in"
+                placeholder="Enter authorized admin email"
                 className="w-full bg-zinc-950/90 border border-zinc-800 rounded-2xl text-white pl-10 pr-4 py-3.5 focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
               />
             </div>
@@ -132,6 +128,7 @@ export default function AdminLoginPage() {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••••••"
@@ -140,7 +137,7 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <div className="pt-2 space-y-2.5">
+          <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
@@ -149,17 +146,9 @@ export default function AdminLoginPage() {
               <ShieldCheck className="w-4 h-4" />
               <span>{loading ? 'Verifying Admin Session...' : 'Authenticate Platform Admin'}</span>
             </button>
-
-            <button
-              type="button"
-              onClick={handleQuickDemoAdmin}
-              className="w-full bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-mono py-2.5 px-3 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all flex items-center justify-center gap-1.5"
-            >
-              <Zap className="w-3 h-3 text-amber-400" />
-              <span>Autofill Governance Credentials</span>
-            </button>
           </div>
         </form>
+
 
         <div className="pt-3 border-t border-zinc-800/80 text-center">
           <Link

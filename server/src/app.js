@@ -7,6 +7,7 @@ import { securityHeadersMiddleware, apiRateLimiter, authRateLimiter } from './mi
 import { globalErrorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 import { googleAuth, getMe, adminLogin } from './controllers/auth.controller.js';
 import { getShops, getShopById, createShop, verifyShop } from './controllers/shop.controller.js';
+import { getCloudinarySignature } from './controllers/payment.controller.js';
 import { authenticateJwt } from './middlewares/auth.middleware.js';
 import { requireRole } from './middlewares/role.middleware.js';
 
@@ -55,7 +56,8 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Health Check Endpoint (Root level)
+// Favicon & Health Check Endpoints (Root level)
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -64,6 +66,7 @@ app.get('/health', (_req, res) => {
     env: process.env.NODE_ENV || 'development',
   });
 });
+
 
 // API Routes Router (Mounted at /api/v1)
 const apiRouter = express.Router();
@@ -92,11 +95,16 @@ apiRouter.use('/disputes', disputeRoutes);
 apiRouter.use('/cart', cartRoutes);
 apiRouter.use('/payments', paymentRoutes);
 
+// --- Cloudinary Signature Routes ---
+apiRouter.get('/cloudinary/signature', authenticateJwt, getCloudinarySignature);
+apiRouter.get('/cloudinary-signature', authenticateJwt, getCloudinarySignature);
+
 // --- Shop Routes ---
 apiRouter.get('/shops', getShops);
 apiRouter.get('/shops/:shopId', getShopById);
 apiRouter.post('/shops', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), createShop);
 apiRouter.patch('/shops/:shopId/verify', authenticateJwt, requireRole(['ADMIN']), verifyShop);
+
 
 // Mount API v1 router
 app.use('/api/v1', apiRouter);

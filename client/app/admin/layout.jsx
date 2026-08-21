@@ -131,7 +131,7 @@ export default function AdminLayout({ children }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@unretail.in"
+                  placeholder="Enter authorized admin email"
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl text-white pl-10 pr-3.5 py-3 focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>

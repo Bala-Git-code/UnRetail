@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
-import { ShieldCheck, ShieldAlert, KeyRound, Lock, ArrowLeft, Sparkles, Zap, ArrowRight } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, KeyRound, Lock, ArrowLeft } from 'lucide-react';
 import { LogoSymbol } from '@/components/Logo';
 
 export default function AdminLoginPage() {
@@ -14,33 +14,39 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Check if user is already logged in as admin
-    const storedUser = localStorage.getItem('unretail_user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed.role === 'ADMIN') {
-          router.push('/admin/dashboard');
-        }
-      } catch (e) {}
-    }
-  }, [router]);
-
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setError('Please enter your authorized admin email and security password.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const res = await apiClient.post('/auth/admin-login', { email, password });
+      const res = await apiClient.post('/auth/admin-login', {
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+
       if (res.data?.token && res.data?.user) {
         localStorage.setItem('unretail_token', res.data.token);
         localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
         router.push('/admin/dashboard');
+      } else {
+        setError('Authentication failed. Please verify your admin credentials.');
       }
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Unable to connect to server. Please ensure backend is running.');
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          'Authentication rejected. Please check your admin credentials.'
+      );
     } finally {
       setLoading(false);
     }
@@ -48,15 +54,12 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 flex flex-col justify-between items-center p-6 relative font-sans overflow-hidden selection:bg-amber-400 selection:text-black">
-      
       {/* Ambient Lighting Accents */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-amber-400/10 blur-[160px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-[400px] h-[400px] bg-neon-lime/5 blur-[140px] rounded-full pointer-events-none" />
 
       {/* Grid Pattern */}
-      <div 
-        className="absolute inset-0 bg-[linear-gradient(to_right,#27272a15_1px,transparent_1px),linear-gradient(to_bottom,#27272a15_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none"
-      />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a15_1px,transparent_1px),linear-gradient(to_bottom,#27272a15_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
       {/* Top Navigation */}
       <header className="relative z-20 w-full max-w-5xl flex items-center justify-between py-2">
@@ -77,7 +80,6 @@ export default function AdminLoginPage() {
 
       {/* Central Auth Container */}
       <div className="w-full max-w-md luxury-glass rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 space-y-6 my-auto">
-        
         {/* Header & Logo */}
         <div className="flex flex-col items-center text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/10 border border-amber-400/25 rounded-full text-xs font-mono font-medium text-amber-400">
@@ -85,9 +87,7 @@ export default function AdminLoginPage() {
             <span>EXECUTIVE GOVERNANCE DESK</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight">
-            Admin Portal
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight">Admin Portal</h1>
           <p className="text-xs text-zinc-400 max-w-xs font-sans">
             Restricted access portal for platform escrow management, store verifications & dispute resolution.
           </p>
@@ -100,7 +100,7 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 text-xs">
           <div className="space-y-1.5">
             <label className="text-zinc-300 font-semibold uppercase tracking-wider text-[11px] block">
               Governance Email
@@ -110,7 +110,9 @@ export default function AdminLoginPage() {
               <input
                 type="email"
                 required
-                autoComplete="email"
+                name="admin_auth_user"
+                id="admin_auth_user"
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter authorized admin email"
@@ -128,7 +130,9 @@ export default function AdminLoginPage() {
               <input
                 type="password"
                 required
-                autoComplete="current-password"
+                name="admin_auth_pass"
+                id="admin_auth_pass"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••••••"
@@ -148,7 +152,6 @@ export default function AdminLoginPage() {
             </button>
           </div>
         </form>
-
 
         <div className="pt-3 border-t border-zinc-800/80 text-center">
           <Link

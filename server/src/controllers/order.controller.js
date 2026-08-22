@@ -274,31 +274,9 @@ export const getOrderById = async (req, res) => {
     }
 
     if (!order) {
-      // Fallback mock order if needed
-      return res.status(200).json({
-        success: true,
-        data: {
-          id: orderId,
-          razorpayOrderId: orderId,
-          status: 'PAID',
-          escrowStatus: 'ACTIVE',
-          amountPaid: 5499,
-          createdAt: new Date(),
-          item: {
-            id: 'item-101',
-            title: '1990s Vintage Levi 501 Heavyweight Denim',
-            price: 5499,
-            category: 'Apparel',
-            size: 'W32 L30',
-            images: ['/images/denim_vintage.png'],
-          },
-          shop: {
-            shopName: 'Relic Vintage Co.',
-            city: 'Mumbai',
-            address: '42 Bandra West, Hill Road',
-            isVerified: true,
-          },
-        },
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found',
       });
     }
 

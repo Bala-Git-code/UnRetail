@@ -20,12 +20,12 @@ import {
   Store,
 } from 'lucide-react';
 
-export function OrderSuccessContent(props) {
+export function OrderSuccessContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const resolvedOrderId = params?.orderId || props?.params?.orderId || searchParams.get('orderId') || 'ord_latest';
+  const resolvedOrderId = params?.orderId || searchParams.get('orderId') || 'ord_latest';
   const razorpayPaymentId = searchParams.get('rp_pay') || null;
   const razorpayOrderId = searchParams.get('rp_order') || null;
 
@@ -50,21 +50,8 @@ export function OrderSuccessContent(props) {
     }
   };
 
-  const item = order?.item || {
-    id: 'item-101',
-    title: '1990s Vintage Levi 501 Heavyweight Denim',
-    price: 5499,
-    category: 'Apparel',
-    size: 'W32 L30',
-    condition: 'LIKE_NEW',
-    images: ['/images/denim_vintage.png'],
-  };
-
-  const shop = order?.shop || {
-    shopName: 'Relic Vintage Co.',
-    city: 'Mumbai',
-    address: '42 Bandra West, Hill Road',
-  };
+  const item = order?.item || null;
+  const shop = order?.shop || null;
 
   return (
     <div className="min-h-screen bg-street-black text-zinc-100 p-4 md:p-8 max-w-4xl mx-auto font-sans flex flex-col items-center justify-center py-12">
@@ -129,8 +116,8 @@ export function OrderSuccessContent(props) {
             <div className="flex gap-4 p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 items-center">
               <div className="w-16 h-20 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0">
                 <img
-                  src={item.images?.[0] || '/images/denim_vintage.png'}
-                  alt={item.title}
+                  src={item?.images?.[0] || '/images/denim_vintage.png'}
+                  alt={item?.title || 'Secured Item'}
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = '/images/denim_vintage.png';
@@ -139,15 +126,19 @@ export function OrderSuccessContent(props) {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-bold text-white truncate">{item.title}</h4>
+                <h4 className="text-sm font-bold text-white truncate">{item?.title || 'Secured Thrift Grail'}</h4>
                 <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
-                  <span>{shop.shopName}</span>
-                  <span>•</span>
-                  <span>{shop.city}</span>
+                  <span>{shop?.shopName || 'Partner Vintage Boutique'}</span>
+                  {shop?.city && (
+                    <>
+                      <span>•</span>
+                      <span>{shop.city}</span>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 text-[10px]">
                   <span className="bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded border border-zinc-800 font-mono">
-                    Size: {item.size || 'OS'}
+                    Size: {item?.size || 'OS'}
                   </span>
                   <span className="bg-neon-lime/10 text-neon-lime px-2 py-0.5 rounded border border-neon-lime/20 font-bold">
                     1-of-1 Thrift Piece
@@ -156,7 +147,7 @@ export function OrderSuccessContent(props) {
               </div>
               <div className="text-right">
                 <span className="text-sm font-bold text-white block tabular-nums">
-                  {formatCurrency(order?.amountPaid || item.price || 0)}
+                  {formatCurrency(order?.amountPaid || item?.price || 0)}
                 </span>
                 <span className="text-[10px] text-emerald-400 font-semibold">Captured</span>
               </div>

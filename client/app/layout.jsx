@@ -26,12 +26,23 @@ export const metadata = {
   title: 'UNRETAIL — Curated Thrift & Streetwear Marketplace',
   description:
     'Real-time inventory from verified physical thrift stores and streetwear boutiques. Safe escrow payments and authentic vintage grails.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
+  },
 };
+
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`dark scroll-smooth ${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >

@@ -26,6 +26,16 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Use memory cache during development to eliminate Windows .pack.gz_ filesystem rename lock collisions
+      config.cache = {
+        type: 'memory',
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;
+

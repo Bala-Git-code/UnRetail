@@ -56,18 +56,37 @@ export const googleAuth = async (req, res) => {
 
     let user;
     try {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: userEmail },
+      });
+
+      // Preserve existing MERCHANT or ADMIN role and approved merchant status
+      const effectiveRole = existingUser?.role === 'ADMIN'
+        ? 'ADMIN'
+        : existingUser?.role === 'MERCHANT'
+        ? 'MERCHANT'
+        : targetRole;
+
+      const effectiveMerchantStatus = existingUser?.merchantStatus && existingUser.merchantStatus !== 'UNSUBMITTED'
+        ? existingUser.merchantStatus
+        : effectiveRole === 'MERCHANT'
+        ? 'APPROVED'
+        : 'UNSUBMITTED';
+
       user = await prisma.user.upsert({
         where: { email: userEmail },
         update: {
           fullName: userName,
           avatarUrl: userAvatar,
-          role: targetRole, // Dynamically update role on login based on selected tab
+          role: effectiveRole,
+          ...(effectiveMerchantStatus !== 'UNSUBMITTED' ? { merchantStatus: effectiveMerchantStatus } : {}),
         },
         create: {
           email: userEmail,
           fullName: userName,
           avatarUrl: userAvatar,
           role: targetRole,
+          merchantStatus: targetRole === 'MERCHANT' ? 'APPROVED' : 'UNSUBMITTED',
         },
       });
     } catch (dbError) {
@@ -77,10 +96,12 @@ export const googleAuth = async (req, res) => {
         fullName: userName,
         avatarUrl: userAvatar,
         role: targetRole,
+        merchantStatus: targetRole === 'MERCHANT' ? 'APPROVED' : 'UNSUBMITTED',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
     }
+
 
     const accessToken = jwt.sign(
       {
@@ -175,11 +196,15 @@ export const getMe = async (req, res) => {
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const adminEmail = process.env.ADMIN_EMAIL || 'balagiri702@gmail.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || '0987654321zxcvbnm';
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
+    }
+
+    if (!adminEmail || !adminPassword) {
+      return res.status(500).json({ success: false, error: 'Administrative authentication is not configured on server' });
     }
 
     if (email.trim().toLowerCase() !== adminEmail.trim().toLowerCase() || password !== adminPassword) {
@@ -213,4 +238,5 @@ export const adminLogin = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message || 'Admin authentication failed' });
   }
 };
+
 

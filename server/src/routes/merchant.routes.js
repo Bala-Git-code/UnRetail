@@ -14,8 +14,8 @@ import { requireRole } from '../middlewares/role.middleware.js';
 const router = express.Router();
 
 // Merchant routes
-router.get('/my-shop', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), getMyShop);
-router.get('/dashboard-stats', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), getDashboardStats);
+router.get('/my-shop', authenticateJwt, getMyShop);
+router.get('/dashboard-stats', authenticateJwt, getDashboardStats);
 router.post('/onboarding', authenticateJwt, submitMerchantOnboarding);
 router.get('/status', authenticateJwt, getMerchantStatus);
 
@@ -25,4 +25,5 @@ router.patch('/admin/:userId/approve', authenticateJwt, requireRole(['ADMIN']), 
 router.patch('/admin/:userId/reject', authenticateJwt, requireRole(['ADMIN']), rejectMerchant);
 
 export default router;
+
 

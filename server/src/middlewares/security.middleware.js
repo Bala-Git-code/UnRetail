@@ -23,6 +23,7 @@ export function securityHeadersMiddleware(req, res, next) {
 
   // Cross-Origin policies
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
 
   // Remove Express footprint
   res.removeHeader('X-Powered-By');

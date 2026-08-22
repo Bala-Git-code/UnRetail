@@ -1,9 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
+let rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
+rawUrl = rawUrl.trim().replace(/\/+$/, '');
+if (!rawUrl.includes('/api/v1') && !rawUrl.includes('/api')) {
+  rawUrl = `${rawUrl}/api/v1`;
+}
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: rawUrl,
   headers: {
     'Content-Type': 'application/json',
   },

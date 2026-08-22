@@ -106,8 +106,10 @@ apiRouter.post('/shops', authenticateJwt, requireRole(['MERCHANT', 'ADMIN']), cr
 apiRouter.patch('/shops/:shopId/verify', authenticateJwt, requireRole(['ADMIN']), verifyShop);
 
 
-// Mount API v1 router
+// Mount API router across /api/v1, /api, and root routes
 app.use('/api/v1', apiRouter);
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // 404 Handler for unmatched routes
 app.use(notFoundHandler);

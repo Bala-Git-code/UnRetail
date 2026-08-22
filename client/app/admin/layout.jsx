@@ -48,17 +48,28 @@ export default function AdminLayout({ children }) {
   };
 
   const handleAdminLogin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setLoginError('Please enter your authorized admin email and security password.');
+      return;
+    }
+
     setLoginLoading(true);
     setLoginError(null);
 
     try {
-      const res = await apiClient.post('/auth/admin-login', { email, password });
+      const res = await apiClient.post('/auth/admin-login', { email: cleanEmail, password: cleanPassword });
       if (res.data?.token && res.data?.user) {
         localStorage.setItem('unretail_token', res.data.token);
         localStorage.setItem('unretail_user', JSON.stringify(res.data.user));
         setUser(res.data.user);
         setAuthorized(true);
+      } else {
+        setLoginError('Authentication failed. Invalid admin credentials.');
       }
     } catch (err) {
       setLoginError(err.response?.data?.error || err.message || 'Unable to connect to server. Please ensure backend is running.');
@@ -121,7 +132,7 @@ export default function AdminLayout({ children }) {
             </div>
           )}
 
-          <form onSubmit={handleAdminLogin} className="space-y-4 text-xs">
+          <form onSubmit={handleAdminLogin} autoComplete="off" className="space-y-4 text-xs">
             <div className="space-y-1.5">
               <label className="text-zinc-300 font-semibold uppercase tracking-wider text-[11px] block">Admin Email</label>
               <div className="relative">
@@ -129,6 +140,9 @@ export default function AdminLayout({ children }) {
                 <input
                   type="email"
                   required
+                  name="admin_desk_email"
+                  id="admin_desk_email"
+                  autoComplete="off"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter authorized admin email"
@@ -144,6 +158,9 @@ export default function AdminLayout({ children }) {
                 <input
                   type="password"
                   required
+                  name="admin_desk_pass"
+                  id="admin_desk_pass"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••••••"

@@ -3,7 +3,6 @@ import prisma from '../prisma/client.js';
 import { createRazorpayOrder } from '../services/razorpay.service.js';
 import { generateCloudinarySignature } from '../services/cloudinary.service.js';
 import { syncItemToMeilisearch } from '../services/meili.service.js';
-import { MOCK_ITEMS } from './item.controller.js';
 
 /**
  * Helper to ensure a valid User record exists in DB for foreign key relations
@@ -76,11 +75,6 @@ export const createPaymentOrder = async (req, res) => {
         });
       } catch (err) {
         item = null;
-      }
-
-      if (!item) {
-        const mock = MOCK_ITEMS.find((m) => m.id === id);
-        if (mock) item = { ...mock };
       }
 
       if (!item) {
@@ -184,14 +178,6 @@ export const createPaymentOrder = async (req, res) => {
         });
       });
     }
-
-    // Update mock items in-memory state as well
-    itemIds.forEach((id) => {
-      const idx = MOCK_ITEMS.findIndex((m) => m.id === id);
-      if (idx !== -1 && MOCK_ITEMS[idx].status === 'AVAILABLE') {
-        MOCK_ITEMS[idx].status = 'PENDING';
-      }
-    });
 
     return res.status(201).json({
       success: true,
@@ -317,20 +303,6 @@ export const verifyPayment = async (req, res) => {
     } catch (dbErr) {
       console.warn('Prisma verification transaction warning:', dbErr.message);
     }
-
-    // Sync in-memory MOCK_ITEMS to SOLD
-    const targetItemIds = updatedOrders.map((o) => o.itemId).filter(Boolean);
-    if (targetItemIds.length === 0 && Array.isArray(req.body.itemIds)) {
-      targetItemIds.push(...req.body.itemIds);
-    }
-
-    targetItemIds.forEach((id) => {
-      const idx = MOCK_ITEMS.findIndex((m) => m.id === id);
-      if (idx !== -1) {
-        MOCK_ITEMS[idx].status = 'SOLD';
-        MOCK_ITEMS[idx].updatedAt = new Date();
-      }
-    });
 
     return res.status(200).json({
       success: true,

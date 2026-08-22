@@ -29,134 +29,24 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
 
-const FALLBACK_ITEMS_MAP = {
-  'item-101': {
-    id: 'item-101',
-    title: '1990s Vintage Levi 501 Heavyweight Denim',
-    description: 'Authentic 90s vintage Levi 501s with dark indigo wash. Heavyweight 14oz rigid denim. Made in USA classic straight fit with original copper rivets.',
-    price: 5499,
-    category: 'Apparel',
-    subcategory: 'Denim & Bottoms',
-    size: 'W32 L30',
-    era: '90s',
-    condition: 'LIKE_NEW',
-    images: ['/images/denim_vintage.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
-  },
-  'item-102': {
-    id: 'item-102',
-    title: 'Distressed Harley Davidson Leather Bomber Jacket',
-    description: 'Heavy patina genuine leather bomber jacket from late 80s. Authentic motorcycle heritage piece with heavyweight brass hardware.',
-    price: 12500,
-    category: 'Apparel',
-    subcategory: 'Outerwear & Jackets',
-    size: 'L',
-    era: '80s',
-    condition: 'GENTLY_USED',
-    images: ['/images/leather_jacket.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-2', shopName: 'Retro Vault', city: 'Bengaluru', isVerified: true, address: '108 Indiranagar, 100ft Road' },
-  },
-  'item-103': {
-    id: 'item-103',
-    title: 'Y2K Stussy Graphic Heavyweight Tee',
-    description: 'Single stitch faded black graphic tee. Pre-shrunk vintage cotton drop with archival graphic and ribbed collar.',
-    price: 2800,
-    category: 'Apparel',
-    subcategory: 'Tops & Graphic Tees',
-    size: 'XL',
-    era: 'Y2K',
-    condition: 'LIKE_NEW',
-    images: ['/images/graphic_tee.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-3', shopName: 'Dust & Gold Vintage', city: 'Delhi', isVerified: false, address: '15 Hauz Khas Village' },
-  },
-  'item-104': {
-    id: 'item-104',
-    title: 'Archival Japanese-Release High-Tops',
-    description: 'Rare 90s Japanese boutique high-top silhouette in collector-grade condition with original laces and vintage box.',
-    price: 8900,
-    category: 'Accessories',
-    subcategory: 'Footwear & Sneakers',
-    size: 'US 10',
-    era: '90s',
-    condition: 'GENTLY_USED',
-    images: ['/images/archival_sneakers.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
-  },
-  'item-105': {
-    id: 'item-105',
-    title: 'Sony Cyber-shot DSC-P100 Silver Digicam',
-    description: 'Legendary 2004 CCD sensor 5.1MP digicam with Carl Zeiss Vario-Tessar 3x optical zoom. Includes original battery, Memory Stick, and charger. Verified in-store.',
-    price: 9400,
-    category: 'Tech & Retro Electronics',
-    subcategory: 'Digicams',
-    size: 'Pocket',
-    era: 'Y2K',
-    techConditionGrade: 'Grade A - Mint',
-    powerOnStatus: true,
-    screenSensorClarity: true,
-    portChargingTested: true,
-    knownDefectsReported: false,
-    knownDefectsDesc: 'Pristine sensor and optics with zero dead pixels.',
-    serialNumberImei: 'DSCP100-SN-894210',
-    images: ['/images/vintage_camera.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-1', shopName: 'Relic Vintage Co.', city: 'Mumbai', isVerified: true, address: '42 Bandra West, Hill Road' },
-  },
-  'item-106': {
-    id: 'item-106',
-    title: 'Nintendo Game Boy Color - Atomic Purple Edition',
-    description: 'Archival 1998 translucent atomic purple handheld with authentic casing and crisp clean LCD panel. Buttons and speaker fully tested.',
-    price: 7800,
-    category: 'Tech & Retro Electronics',
-    subcategory: 'Gaming',
-    size: 'Handheld',
-    era: '90s',
-    techConditionGrade: 'Grade A - Mint',
-    powerOnStatus: true,
-    screenSensorClarity: true,
-    portChargingTested: true,
-    knownDefectsReported: false,
-    knownDefectsDesc: 'Flawless sound output, clean battery contacts with zero corrosion.',
-    serialNumberImei: 'GBC-AP-540921',
-    images: ['/images/retro_gaming.png'],
-    status: 'AVAILABLE',
-    shop: { id: 'shop-2', shopName: 'Retro Vault', city: 'Bengaluru', isVerified: true, address: '108 Indiranagar, 100ft Road' },
-  },
-};
-
-export default function ProductDetailPage(props) {
+export default function ProductDetailPage() {
   const routeParams = useParams();
   const router = useRouter();
   const { addToCart, isInCart, openCart } = useCart();
 
-  let resolvedId = 'item-101';
-  if (routeParams?.itemId) {
-    resolvedId = routeParams.itemId;
-  } else if (props?.params?.itemId) {
-    resolvedId = props.params.itemId;
-  }
+  const itemId = routeParams?.itemId || null;
 
-  const [itemId, setItemId] = useState(resolvedId);
-  const [item, setItem] = useState(FALLBACK_ITEMS_MAP[resolvedId] || FALLBACK_ITEMS_MAP['item-101']);
+  const [item, setItem] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [zoomLightboxOpen, setZoomLightboxOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    if (routeParams?.itemId) {
-      setItemId(routeParams.itemId);
-    }
-  }, [routeParams?.itemId]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && itemId) {
       const stored = localStorage.getItem('unretail_saved_grails');
       if (stored) {
         try {
@@ -168,7 +58,7 @@ export default function ProductDetailPage(props) {
   }, [itemId]);
 
   const toggleSave = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && itemId) {
       const stored = localStorage.getItem('unretail_saved_grails');
       let ids = stored ? JSON.parse(stored) : [];
       if (ids.includes(itemId)) {
@@ -183,21 +73,26 @@ export default function ProductDetailPage(props) {
   };
 
   useEffect(() => {
-    fetchItemDetails();
+    if (itemId) {
+      fetchItemDetails();
+    }
   }, [itemId]);
 
   const fetchItemDetails = async () => {
+    setLoading(true);
+    setFetchError(null);
     try {
       const res = await apiClient.get(`/items/${itemId}`);
       if (res.data?.data) {
         setItem(res.data.data);
-      } else if (FALLBACK_ITEMS_MAP[itemId]) {
-        setItem(FALLBACK_ITEMS_MAP[itemId]);
+      } else {
+        setFetchError('Product not found or has been unlisted.');
       }
     } catch (err) {
-      if (FALLBACK_ITEMS_MAP[itemId]) {
-        setItem(FALLBACK_ITEMS_MAP[itemId]);
-      }
+      console.warn('Failed to load item details:', err);
+      setFetchError(err.response?.data?.error || 'Product not found in catalog');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -218,8 +113,28 @@ export default function ProductDetailPage(props) {
       <div className="min-h-screen bg-street-black text-zinc-100 p-8 max-w-7xl mx-auto flex items-center justify-center text-sm">
         <div className="animate-pulse flex items-center gap-2 text-zinc-400">
           <Sparkles className="w-4 h-4 text-neon-lime animate-spin" />
-          <span>Loading Grail Specifications...</span>
+          <span>Loading Item Specifications...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (fetchError || !item) {
+    return (
+      <div className="min-h-screen bg-street-black text-zinc-100 p-8 max-w-7xl mx-auto flex flex-col items-center justify-center text-center space-y-4 font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
+          <Tag className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Product Not Found</h2>
+        <p className="text-xs text-zinc-400 max-w-md">
+          {fetchError || 'The product you are looking for does not exist or has been removed from the catalog.'}
+        </p>
+        <Link
+          href="/feed"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-neon-lime hover:bg-white text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md mt-2"
+        >
+          <ArrowLeft className="w-4 h-4" /> Browse Catalog Feed
+        </Link>
       </div>
     );
   }

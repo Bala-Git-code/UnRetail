@@ -1,5 +1,4 @@
 import prisma from '../prisma/client.js';
-import { MOCK_ITEMS } from './item.controller.js';
 
 /**
  * Validates an array of item IDs from the client cart.
@@ -47,22 +46,13 @@ export const validateCart = async (req, res) => {
           },
         });
       } catch (dbErr) {
-        // Fallback to mock item if DB error
         item = null;
-      }
-
-      // Check fallback mock items if not in DB
-      if (!item) {
-        const mock = MOCK_ITEMS.find((m) => m.id === id);
-        if (mock) {
-          item = { ...mock };
-        }
       }
 
       if (!item) {
         unavailableItems.push({
           id,
-          title: 'Unknown Thrift Item',
+          title: 'Thrift Item',
           reason: 'Item is no longer listed in catalog',
           status: 'NOT_FOUND',
         });

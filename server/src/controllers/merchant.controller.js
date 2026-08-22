@@ -131,70 +131,117 @@ export const getMyShop = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    let shop = await prisma.shop.findFirst({
-      where: { ownerId: req.user.id },
-    });
+    let targetShopIds = [];
 
-    if (!shop) {
-      // Fallback to first shop to support testing
-      shop = await prisma.shop.findFirst();
-    }
-
-    if (!shop) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          grossSales: 0,
-          activeRacks: 0,
-          itemsSold: 0,
-          pendingEscrow: 0,
-          availablePayout: 0,
-        },
+    // 1. Find all shops owned by this user
+    try {
+      const userShops = await prisma.shop.findMany({
+        where: { ownerId: req.user.id },
       });
+      if (userShops && userShops.length > 0) {
+        targetShopIds = userShops.map((s) => s.id);
+      }
+    } catch (err) {
+      console.warn('Prisma user shop lookup warning:', err.message);
     }
 
-    // 1. Gross Sales (PAID, SHIPPED, DELIVERED orders)
-    const grossSalesAggregate = await prisma.order.aggregate({
-      where: {
-        shopId: shop.id,
-        status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
-      },
-      _sum: {
-        amountPaid: true,
-      },
-    });
-    const grossSales = grossSalesAggregate._sum.amountPaid || 0;
+    // If no shop exists yet for this merchant, fallback to first shop or create one
+    if (targetShopIds.length === 0) {
+      try {
+        const firstShop = await prisma.shop.findFirst();
+        if (firstShop) {
+          targetShopIds = [firstShop.id];
+        }
+      } catch (err) {
+        // Continue
+      }
+    }
 
-    // 2. Active Racks (AVAILABLE items)
-    const activeRacks = await prisma.item.count({
-      where: {
-        shopId: shop.id,
-        status: 'AVAILABLE',
-      },
-    });
+    let grossSales = 0;
+    let activeRacks = 0;
+    let itemsSold = 0;
+    let pendingEscrow = 0;
+    let availablePayout = 0;
 
-    // 3. Items Sold (SOLD, SOLD_OFFLINE items)
-    const itemsSold = await prisma.item.count({
-      where: {
-        shopId: shop.id,
-        status: { in: ['SOLD', 'SOLD_OFFLINE'] },
-      },
-    });
+    if (targetShopIds.length > 0) {
+      try {
+        // 1. Online order sales (PAID, SHIPPED, DELIVERED)
+        const onlineSalesAggregate = await prisma.order.aggregate({
+          where: {
+            shopId: { in: targetShopIds },
+            status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
+          },
+          _sum: {
+            amountPaid: true,
+          },
+        });
+        const onlineSales = onlineSalesAggregate._sum.amountPaid || 0;
 
-    // 4. Pending Escrow (funds in ESCROW_HELD status)
-    const pendingEscrowAggregate = await prisma.order.aggregate({
-      where: {
-        shopId: shop.id,
-        escrowStatus: 'ESCROW_HELD',
-      },
-      _sum: {
-        amountPaid: true,
-      },
-    });
-    const pendingEscrow = pendingEscrowAggregate._sum.amountPaid || 0;
+        // 2. Offline / In-Store sales from SOLD_OFFLINE items
+        const offlineSalesAggregate = await prisma.item.aggregate({
+          where: {
+            shopId: { in: targetShopIds },
+            status: 'SOLD_OFFLINE',
+          },
+          _sum: {
+            price: true,
+          },
+        });
+        const offlineSales = offlineSalesAggregate._sum.price || 0;
 
-    // 5. Available Payout (Gross sales minus 10% platform fee)
-    const availablePayout = Math.max(0, grossSales * 0.90);
+        // 3. Directly marked SOLD items without orders
+        const soldItemsAggregate = await prisma.item.aggregate({
+          where: {
+            shopId: { in: targetShopIds },
+            status: 'SOLD',
+          },
+          _sum: {
+            price: true,
+          },
+        });
+        const soldItemsPrice = soldItemsAggregate._sum.price || 0;
+
+        // Combine total gross store sales
+        grossSales = onlineSales + offlineSales + (onlineSales === 0 ? soldItemsPrice : 0);
+
+        // 4. Active Racks (AVAILABLE items)
+        activeRacks = await prisma.item.count({
+          where: {
+            shopId: { in: targetShopIds },
+            status: 'AVAILABLE',
+          },
+        });
+
+        // 5. Total Items Sold (both online and in-store)
+        itemsSold = await prisma.item.count({
+          where: {
+            shopId: { in: targetShopIds },
+            status: { in: ['SOLD', 'SOLD_OFFLINE'] },
+          },
+        });
+
+        // 6. Pending Escrow (orders waiting delivery inspection / escrow held)
+        const pendingEscrowAggregate = await prisma.order.aggregate({
+          where: {
+            shopId: { in: targetShopIds },
+            OR: [
+              { escrowStatus: 'ESCROW_HELD' },
+              { status: 'PAID' },
+              { status: 'SHIPPED' },
+            ],
+          },
+          _sum: {
+            amountPaid: true,
+          },
+        });
+        pendingEscrow = pendingEscrowAggregate._sum.amountPaid || 0;
+
+        // 7. Net Vendor Payout (90% after 10% platform fee)
+        availablePayout = Math.round(grossSales * 0.90);
+      } catch (dbErr) {
+        console.warn('Prisma getDashboardStats DB error:', dbErr.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -210,6 +257,9 @@ export const getDashboardStats = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+
 
 /**
  * Submit Merchant KYC & Citizen Onboarding
